@@ -36,63 +36,63 @@
     </message>
     <message>
         <source>Resumed %1</source>
-        <translation></translation>
+        <translation>%1 재개됨</translation>
     </message>
     <message>
         <source>Resume failed for %1</source>
-        <translation></translation>
+        <translation>%1 재개 실패</translation>
     </message>
     <message>
         <source>Force quit %1: kill=%2 thaw=%3</source>
-        <translation></translation>
+        <translation>%1 강제 종료: kill=%2 thaw=%3</translation>
     </message>
     <message>
         <source>Force quit %1 failed: kill=%2 thaw=%3</source>
-        <translation></translation>
+        <translation>%1 강제 종료 실패: kill=%2 thaw=%3</translation>
     </message>
     <message>
         <source>Memory pressure above limit: %1%</source>
-        <translation></translation>
+        <translation>메모리 압력 제한 초과: %1%</translation>
     </message>
     <message>
         <source>Memory pressure back below limit: %1%</source>
-        <translation></translation>
+        <translation>메모리 압력 제한 미만으로 복귀: %1%</translation>
     </message>
     <message>
         <source>Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4</source>
-        <translation></translation>
+        <translation>잘못된 샘플: 압력=%1 메모리=%2 사용자Pgscan=%3 앱샘플=%4</translation>
     </message>
     <message>
         <source>Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% swapUsed=%6%% apps=%7</source>
-        <translation></translation>
+        <translation>트리거 %1: 압력=%2%% 지속시간=%3ms 최근회수=%4 메모리사용=%5%% 스왑사용=%6%% 앱=%7</translation>
     </message>
     <message>
         <source>Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB</source>
-        <translation></translation>
+        <translation>%1(%2) 정지됨 트리거=%3 회수=%4MB 스왑=%5MB 메모리=%6MB</translation>
     </message>
     <message>
         <source>Cannot freeze %1 (%2): unreadable or frozen by another component</source>
-        <translation></translation>
+        <translation>%1(%2)을(를) 정지할 수 없음: 읽을 수 없거나 다른 구성 요소에 의해 정지됨</translation>
     </message>
     <message>
         <source>Shutdown requested, thawing %1 frozen cgroup(s)</source>
-        <translation></translation>
+        <translation>종료 요청됨, %1개의 정지된 cgroup 해동 중</translation>
     </message>
     <message>
         <source>All frozen cgroups thawed, exiting</source>
-        <translation></translation>
+        <translation>모든 정지된 cgroup 해동됨, 종료</translation>
     </message>
     <message>
         <source>Thaw incomplete (%1 cgroup(s) remain), retrying</source>
-        <translation></translation>
+        <translation>해동 불완전(%1개의 cgroup 남음), 재시도</translation>
     </message>
     <message>
         <source>Window closing, thawing %1 frozen cgroup(s)</source>
-        <translation></translation>
+        <translation>창 닫기, %1개의 정지된 cgroup 해동 중</translation>
     </message>
     <message>
         <source>Close blocked: thaw failed, retrying</source>
-        <translation></translation>
+        <translation>닫기 차단됨: 해동 실패, 재시도</translation>
     </message>
 </context>
 <context>

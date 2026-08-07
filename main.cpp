@@ -1,12 +1,10 @@
-// deepin-liferaft: macOS "Your system has run out of application memory" 对话框的 DTK 克隆
+// deepin-liferaft: macOS "Your system has run out of application memory" 对话框的 Qt/KF6 克隆
 // Fedora systemd-oomd 策略触发 → 自动弹出，按 DDE 应用 cgroup 内存排序。
-#include <DApplication>
-#include <DLog>
-#include <DMainWindow>
-#include <DTitlebar>
-#include <DPushButton>
-#include <DSuggestButton>
-#include <DLabel>
+#include <QApplication>
+#include <QMainWindow>
+#include <QLabel>
+#include <QPushButton>
+#include <QSocketNotifier>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -18,7 +16,6 @@
 #include <QSet>
 #include <QHash>
 #include <QElapsedTimer>
-#include <QSocketNotifier>
 #include <QTemporaryDir>
 #include <QStandardPaths>
 #include <QSettings>
@@ -26,7 +23,6 @@
 #include <QStyle>
 #include <QStyledItemDelegate>
 #include <QPainter>
-#include <QApplication>
 #include <QCloseEvent>
 #include <QShowEvent>
 #include <algorithm>
@@ -37,7 +33,19 @@
 #include <sys/signalfd.h>
 #include <unistd.h>
 
-DWIDGET_USE_NAMESPACE
+// KDE Framework 6 本地化（可选）
+#ifdef HAVE_KF6
+#include <KLocalizedString>
+#endif
+
+// 翻译辅助宏：优先 KF6 i18n()，否则回退到 QObject::tr()
+#ifndef L
+#ifdef HAVE_KF6
+#define L(x) i18n(x)
+#else
+#define L(x) QObject::tr(x)
+#endif
+#endif
 
 static const double PRESSURE_LIMIT = 50.0; // Fedora user@.service policy
 static const int PRESSURE_DURATION_MS = 20000;
@@ -368,7 +376,7 @@ public:
         const bool selected = option.state.testFlag(QStyle::State_Selected);
         const QColor normal = option.palette.color(selected ? QPalette::HighlightedText : QPalette::Text);
         const QFontMetrics metrics(option.font);
-        const QString suffix = paused ? QCoreApplication::translate("AppNameDelegate", "(Paused)") : QString();
+        const QString suffix = paused ? QStringLiteral("(Paused)") : QString();
         const int suffixWidth = metrics.horizontalAdvance(suffix);
         const int textX = iconRect.right() + 7;
         const int available = std::max(0, option.rect.right() - textX - suffixWidth - 4);
@@ -386,9 +394,9 @@ public:
     }
 };
 
-class LiferaftApplication : public DApplication {
+class LiferaftApplication : public QApplication {
 public:
-    using DApplication::DApplication;
+    using QApplication::QApplication;
 
     void setQuitGuard(std::function<bool()> guard) {
         m_quitGuard = std::move(guard);
@@ -406,7 +414,7 @@ protected:
             }
             return true;
         }
-        return DApplication::event(event);
+        return QApplication::event(event);
     }
 
 private:
@@ -414,11 +422,11 @@ private:
     bool m_quitRetryScheduled = false;
 };
 
-class ForceQuitWindow : public DMainWindow {
+class ForceQuitWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit ForceQuitWindow(int signalFd) {
-        setWindowTitle(tr("Force Quit Applications"));
+        setWindowTitle(L("Force Quit Applications"));
         setFixedSize(520, 460);
 
         if (const auto pgscan = memoryStatValue(userCgroupPath(), "pgscan")) {
@@ -443,34 +451,29 @@ public:
     void ensureUi() {
         if (m_table) return;
 
-
         const QIcon icon(":/icons/deepin-liferaft.svg");
         setWindowIcon(icon);
-        titlebar()->setIcon(icon);
-        titlebar()->setTitle(windowTitle());
         auto *central = new QWidget;
         auto *vbox = new QVBoxLayout(central);
         vbox->setContentsMargins(24, 20, 24, 20);
         vbox->setSpacing(10);
 
         auto *heading = new QHBoxLayout;
-        auto *warning = new DLabel;
+        auto *warning = new QLabel;
         warning->setFixedSize(54, 54);
         warning->setAlignment(Qt::AlignCenter);
         warning->setPixmap(style()->standardIcon(QStyle::SP_MessageBoxWarning).pixmap(48, 48));
         heading->addWidget(warning, 0, Qt::AlignTop);
 
         auto *headingText = new QVBoxLayout;
-        auto *title = new DLabel(tr("Your system has run out of application memory."));
+        auto *title = new QLabel(L("Your system has run out of application memory."));
         QFont font = title->font();
         font.setPointSize(15);
         font.setBold(true);
         title->setFont(font);
         title->setWordWrap(true);
-        title->setElideMode(Qt::ElideNone);
-        auto *sub = new DLabel(tr("To avoid problems with your computer, quit applications you are no longer using."));
+        auto *sub = new QLabel(L("To avoid problems with your computer, quit applications you are no longer using."));
         sub->setWordWrap(true);
-        sub->setElideMode(Qt::ElideNone);
         QPalette palette = sub->palette();
         palette.setColor(QPalette::WindowText, QColor(80, 80, 85));
         sub->setPalette(palette);
@@ -503,9 +506,9 @@ public:
         vbox->addWidget(m_table);
 
         auto *buttons = new QHBoxLayout;
-        m_resumeBtn = new DPushButton(tr("Resume"));
-        m_killBtn = new DSuggestButton;
-        m_killBtn->setText(tr("Force Quit"));
+        m_resumeBtn = new QPushButton(L("Resume"));
+        m_killBtn = new QPushButton;
+        m_killBtn->setText(L("Force Quit"));
         buttons->addStretch();
         buttons->addWidget(m_resumeBtn);
         buttons->addWidget(m_killBtn);
@@ -513,20 +516,20 @@ public:
         setCentralWidget(central);
 
         connect(m_table, &QTableWidget::itemSelectionChanged, this, [this] { updateButtons(); });
-        connect(m_resumeBtn, &DPushButton::clicked, this, [this] {
+        connect(m_resumeBtn, &QPushButton::clicked, this, [this] {
             const int row = m_table->currentRow();
             if (row < 0) return;
             const QString cgroup = m_table->item(row, 0)->data(Qt::UserRole).toString();
             if (thawCgroup(cgroup)) {
                 m_frozen.remove(cgroup);
-                qInfo() << tr("Resumed %1").arg(cgroup);
+                qInfo() << L("Resumed %1").arg(cgroup);
             } else {
-                qWarning() << tr("Resume failed for %1").arg(cgroup);
+                qWarning() << L("Resume failed for %1").arg(cgroup);
             }
             sampleApps();
             refresh();
         });
-        connect(m_killBtn, &DPushButton::clicked, this, [this] {
+        connect(m_killBtn, &QPushButton::clicked, this, [this] {
             const int row = m_table->currentRow();
             if (row < 0) return;
             const QString cgroup = m_table->item(row, 0)->data(Qt::UserRole).toString();
@@ -535,9 +538,9 @@ public:
             const bool thawed = !owned || thawCgroup(cgroup);
             if (killed && thawed) {
                 m_frozen.remove(cgroup);
-                qInfo() << tr("Force quit %1: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
+                qInfo() << L("Force quit %1: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
             } else {
-                qWarning() << tr("Force quit %1 failed: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
+                qWarning() << L("Force quit %1 failed: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
             }
             sampleApps();
             refresh();
@@ -594,11 +597,11 @@ public:
         if (pressure > PRESSURE_LIMIT) {
             if (!m_pressureSince.isValid()) {
                 m_pressureSince.start();
-                qInfo() << tr("Memory pressure above limit: %1%").arg(pressure, 0, 'f', 1);
+                qInfo() << L("Memory pressure above limit: %1%").arg(pressure, 0, 'f', 1);
             }
         } else {
             if (m_pressureSince.isValid())
-                qInfo() << tr("Memory pressure back below limit: %1%").arg(pressure, 0, 'f', 1);
+                qInfo() << L("Memory pressure back below limit: %1%").arg(pressure, 0, 'f', 1);
             m_pressureSince.invalidate();
         }
 
@@ -616,7 +619,7 @@ public:
         if (!samplesValid) {
             if (!m_lastSamplesInvalid) {
                 m_lastSamplesInvalid = true;
-                qWarning() << tr("Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4")
+                qWarning() << L("Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4")
                              .arg(pressure >= 0).arg(memory.valid).arg(userPgscanValid).arg(appSampleValid);
             }
         } else
@@ -627,7 +630,7 @@ public:
         const bool coolingDown = m_postAction.isValid() && m_postAction.elapsed() < POST_ACTION_DELAY_MS;
 
         if (trigger != Trigger::None && !coolingDown && !isVisible()) {
-            qInfo() << tr("Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 "
+            qInfo() << L("Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 "
                      "memUsed=%5%% swapUsed=%6%% apps=%7")
                       .arg(triggerName(trigger))
                       .arg(pressure, 0, 'f', 1)
@@ -665,7 +668,7 @@ public:
             if (ownCgroup == app.cgroup || ownCgroup.startsWith(app.cgroup + '/')) continue;
             if (m_frozen.contains(app.cgroup)) continue;
             if (freezeOwned(app.cgroup, m_frozen)) {
-                qInfo() << tr("Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB")
+                qInfo() << L("Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB")
                           .arg(app.name)
                           .arg(app.cgroup)
                           .arg(triggerName(trigger))
@@ -674,7 +677,7 @@ public:
                           .arg(app.memory / 1048576.0, 0, 'f', 1);
                 if (++frozen == 3) break;
             } else {
-                qWarning() << tr("Cannot freeze %1 (%2): unreadable or frozen by another component")
+                qWarning() << L("Cannot freeze %1 (%2): unreadable or frozen by another component")
                              .arg(app.name)
                              .arg(app.cgroup);
             }
@@ -689,16 +692,16 @@ public:
     void requestShutdown() {
         if (m_shutdownRequested) return;
         m_shutdownRequested = true;
-        qInfo() << tr("Shutdown requested, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
+        qInfo() << L("Shutdown requested, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
         retryShutdown();
     }
 
     void retryShutdown() {
         if (unfreezeAll()) {
-            qInfo() << tr("All frozen cgroups thawed, exiting");
+            qInfo() << L("All frozen cgroups thawed, exiting");
             qApp->quit();
         } else {
-            qWarning() << tr("Thaw incomplete (%1 cgroup(s) remain), retrying").arg(m_frozen.size());
+            qWarning() << L("Thaw incomplete (%1 cgroup(s) remain), retrying").arg(m_frozen.size());
             QTimer::singleShot(250, this, [this] { retryShutdown(); });
         }
     }
@@ -728,7 +731,7 @@ public:
         int selectedRow = -1;
         for (int i = 0; i < procs.size(); ++i) {
             const bool frozen = m_frozen.contains(procs[i].cgroup);
-            auto *name = new QTableWidgetItem(procs[i].name + (frozen ? tr("(Paused)") : QString()));
+            auto *name = new QTableWidgetItem(procs[i].name + (frozen ? L("(Paused)") : QString()));
             name->setIcon(QIcon::fromTheme(procs[i].icon,
                                            QIcon::fromTheme("application-x-executable")));
             name->setData(Qt::UserRole, procs[i].cgroup);
@@ -752,26 +755,26 @@ protected:
         ensureUi();
         sampleApps();
         refresh();
-        DMainWindow::showEvent(event);
+        QMainWindow::showEvent(event);
     }
 
     void closeEvent(QCloseEvent *event) override {
-        qInfo() << tr("Window closing, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
+        qInfo() << L("Window closing, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
         if (!unfreezeAll()) {
-            qWarning() << tr("Close blocked: thaw failed, retrying");
+            qWarning() << L("Close blocked: thaw failed, retrying");
             event->ignore();
             QTimer::singleShot(250, this, [this] { close(); });
             return;
         }
         m_postAction.start();
-        DMainWindow::closeEvent(event);
+        QMainWindow::closeEvent(event);
         if (event->isAccepted()) releaseUi();
     }
 
 private:
     QTableWidget *m_table = nullptr;
-    DPushButton *m_resumeBtn = nullptr;
-    DPushButton *m_killBtn = nullptr;
+    QPushButton *m_resumeBtn = nullptr;
+    QPushButton *m_killBtn = nullptr;
     QTimer *m_timer;
     QList<Proc> m_apps;
     QSet<QString> m_frozen;
@@ -786,22 +789,28 @@ private:
 };
 
 int main(int argc, char *argv[]) {
+    // 清除可能干扰的 XDG_APP_ID 环境变量，避免与 setDesktopFileName 冲突
+    unsetenv("XDG_APP_ID");
+
     if (argc == 2 && QByteArray(argv[1]) == "--self-test") return selfTest() ? 0 : 1;
 
     const int signalFd = createSignalFd();
     if (signalFd < 0) return 1;
     LiferaftApplication a(argc, argv);
     a.setApplicationName("deepin-liferaft");
-    a.loadTranslator();
-    a.setApplicationDisplayName(QCoreApplication::translate("main", "Deepin Liferaft"));
-    Dtk::Core::DLogManager::registerConsoleAppender();
-    Dtk::Core::DLogManager::registerJournalAppender();
+    a.setDesktopFileName("deepin-liferaft");  // 必须与 .desktop 文件名一致
+
+#ifdef HAVE_KF6
+    KLocalizedString::setApplicationDomain(QByteArrayLiteral("deepin-liferaft"));
+#endif
+
+    a.setApplicationDisplayName(L("Deepin Liferaft"));
     const bool hidden = a.arguments().contains("--hidden");
     a.setQuitOnLastWindowClosed(!hidden);
-    qInfo() << QCoreApplication::translate("main", "Deepin Liferaft started: pid=%1 mode=%2")
+    qInfo() << L("Deepin Liferaft started: pid=%1 mode=%2")
               .arg(getpid())
               .arg(hidden ? QStringLiteral("hidden") : QStringLiteral("foreground"));
-    // ponytail: DTK 主题菜单原生保存三态选择; 初始值跟随系统
+    // ponytail: 主题菜单原生保存三态选择; 初始值跟随系统
     ForceQuitWindow w(signalFd);
     a.setQuitGuard([&w] { return w.unfreezeAll(); });
     // ponytail: 默认显示窗口; --hidden 后台常驻, 压力触发才弹

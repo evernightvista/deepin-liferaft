@@ -5,24 +5,27 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Dtk6Widget REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+set(QT_MIN_VERSION "6.11.1")
+set(KF6_MIN_VERSION "6.28.0")
+
+find_package(Qt6 ${QT_MIN_VERSION} NO_MODULE COMPONENTS Widgets REQUIRED)
+find_package(KF6I18n ${KF6_MIN_VERSION})   # 引入 ki18n 支持
 
 add_executable(deepin-liferaft main.cpp resources.qrc)
-target_link_libraries(deepin-liferaft PRIVATE Dtk6::Widget)
 
-set(LIFERAFT_TS translations/deepin-liferaft_zh_CN.ts
-              translations/deepin-liferaft_en_US.ts
-              translations/deepin-liferaft_ja_JP.ts
-              translations/deepin-liferaft_ko_KR.ts)
-qt6_add_lrelease(deepin-liferaft TS_FILES ${LIFERAFT_TS}
-                  QM_FILES_OUTPUT_VARIABLE liferaft_qm_files)
+# 链接必要的库，并启用 HAVE_KF6 宏以使用 i18n()
+target_link_libraries(deepin-liferaft PRIVATE Qt6::Widgets KF6::I18n)
+target_compile_definitions(deepin-liferaft PRIVATE HAVE_KF6)
+
+# 处理翻译文件（假设 po 目录位于源码根目录）
+if(EXISTS ${CMAKE_SOURCE_DIR}/po)
+    ki18n_install(po)   # 自动将 po/*.po 编译为 .mo 并安装到 share/locale
+endif()
 
 enable_testing()
 add_test(NAME self-test COMMAND deepin-liferaft --self-test)
 
 install(TARGETS deepin-liferaft RUNTIME DESTINATION bin)
-install(FILES ${liferaft_qm_files} DESTINATION share/deepin-liferaft/translations)
 install(FILES deepin-liferaft.service DESTINATION lib/systemd/user)
 install(FILES deepin-liferaft.desktop DESTINATION share/applications)
 install(FILES data/icons/deepin-liferaft.svg DESTINATION share/icons/hicolor/scalable/apps)
