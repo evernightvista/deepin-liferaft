@@ -3,6 +3,7 @@ project(deepin-liferaft CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 set(QT_MIN_VERSION "6.11.1")
 set(KF6_MIN_VERSION "6.28.0")

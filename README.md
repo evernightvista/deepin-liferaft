@@ -1,5 +1,9 @@
 # Deepin Liferaft
 
+<p align="center">
+  <img src="data/icons/deepin-liferaft.svg" width="128" alt="Deepin Liferaft icon">
+</p>
+
 Deepin Liferaft provides a macOS-style "Your system has run out of application memory" dialog for Deepin. It detects sustained memory pressure, pauses application cgroups before the desktop becomes unusable, and lets the user resume or force quit an application.
 
 ## Behavior
@@ -99,6 +103,7 @@ The package installs:
 - `/usr/bin/deepin-liferaft`
 - `/usr/lib/systemd/user/deepin-liferaft.service`
 - `/usr/share/applications/deepin-liferaft.desktop`
+- `/usr/share/icons/hicolor/scalable/apps/deepin-liferaft.svg`
 - `/usr/share/doc/deepin-liferaft/README.md.gz`
 - `/usr/share/man/man1/deepin-liferaft.1.gz`
 - `/usr/share/deepin-liferaft/translations/` with `zh_CN`, `en_US`, `ja_JP`, and `ko_KR` message catalogs
