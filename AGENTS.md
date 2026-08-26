@@ -11,9 +11,7 @@ Deepin Liferaft is a single-binary DTK 6 application. A systemd user service run
 ## Layout
 
 - `main.cpp`: monitoring policy, cgroup ownership, lifecycle cleanup, and DTK UI
-- `CMakeLists.txt`: build, CTest, resources, and installation
-- `resources.qrc`: embedded application resources
-- `data/icons/`: application icon source
+- `CMakeLists.txt`: build, CTest, and installation
 - `deepin-liferaft.desktop`: DDE application entry
 - `deepin-liferaft.service`: systemd user service
 - `deepin-liferaft.1`: command manual page

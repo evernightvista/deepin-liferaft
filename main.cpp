@@ -451,7 +451,8 @@ public:
     void ensureUi() {
         if (m_table) return;
 
-        const QIcon icon(":/icons/deepin-liferaft.svg");
+        const QIcon icon = QIcon::fromTheme("deepin-liferaft",
+                                             style()->standardIcon(QStyle::SP_ComputerIcon));
         setWindowIcon(icon);
         auto *central = new QWidget;
         auto *vbox = new QVBoxLayout(central);
