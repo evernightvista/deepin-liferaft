@@ -5,7 +5,7 @@ Summary:        Memory pressure dialog for Fedora systemd-oomd (Qt6/KF6 port)
 
 License:        GPL-3.0-or-later
 URL:            https://github.com/evernightvista/deepin-liferaft
-Source0:        https://github.com/evernightvista/deepin-liferaft/releases/download/v%{version}/%{name}-%{version}.tar.gz
+Source0:        https://github.com/evernightvista/deepin-liferaft/archive/refs/heads/main.zip
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -34,7 +34,7 @@ and KF6::I18n for localization instead of DTK.  Translation catalogs are
 shipped for de, fr, ja, ko, zh_CN and zh_TW.
 
 %prep
-%autosetup
+%autosetup -n %{name}-main
 
 %build
 %cmake -DCMAKE_BUILD_TYPE=Release \
