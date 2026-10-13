@@ -19,3 +19,4 @@ Icon=deepin-liferaft
 Terminal=false
 Categories=System;
 StartupNotify=true
+NoDisplay=true
