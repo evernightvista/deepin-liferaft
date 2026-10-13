@@ -1,0 +1,186 @@
+# French translation for deepin-liferaft.
+# Copyright (C) 2026 Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
+# KairikiFedora Software Team <13278297951@sina.cn>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
+"PO-Revision-Date: 2026-10-12 14:00+0200\n"
+"Last-Translator: KairikiFedora Software Team <13278297951@sina.cn>\n"
+"Language-Team: KairikiFedora Software Team <13278297951@sina.cn>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: main.cpp:413
+msgid "System memory information unavailable"
+msgstr "Informations mémoire système indisponibles"
+
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
+msgstr "Mémoire disponible %1 · Mémoire totale %2"
+
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr "Swap non configuré"
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr "Swap disponible %1 · Swap total %2"
+
+#: main.cpp:799
+msgid "Paused"
+msgstr "En pause"
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr "Mémoire faible"
+
+#: main.cpp:926
+msgid ""
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
+msgstr ""
+"Les applications suivantes ont été mises en pause pour maintenir la "
+"réactivité du système. Reprenez-les ou quittez-les de force pour libérer de "
+"la mémoire."
+
+#: main.cpp:948
+msgid "Application"
+msgstr "Application"
+
+#: main.cpp:949
+msgid "Memory"
+msgstr "Utilisation mémoire"
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr "Aucune application à afficher"
+
+#: main.cpp:988
+msgid "Resume"
+msgstr "Reprendre"
+
+#: main.cpp:989
+msgid "Resume app"
+msgstr "Reprendre l'application"
+
+#: main.cpp:991
+msgid "Force Quit"
+msgstr "Quitter de force"
+
+#: main.cpp:992
+msgid "Force quit app"
+msgstr "Quitter l'application de force"
+
+#: main.cpp:1012
+msgid "Resumed %1"
+msgstr "%1 repris"
+
+#: main.cpp:1014
+msgid "Resume failed for %1"
+msgstr "Échec de la reprise de %1"
+
+#: main.cpp:1028
+msgid "Force quit %1: kill=%2 thaw=%3"
+msgstr "%1 quitté de force : kill=%2 thaw=%3"
+
+#: main.cpp:1030
+msgid "Force quit %1 failed: kill=%2 thaw=%3"
+msgstr "Échec de l'arrêt forcé de %1 : kill=%2 thaw=%3"
+
+#: main.cpp:1101
+msgid "Memory pressure above limit: %1%"
+msgstr "Pression mémoire au-dessus de la limite : %1 %"
+
+#: main.cpp:1105
+msgid "Memory pressure back below limit: %1%"
+msgstr "Pression mémoire revenue sous la limite : %1 %"
+
+#: main.cpp:1128
+msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
+msgstr "Échantillons invalides : pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
+
+#: main.cpp:1143
+msgid ""
+"Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
+msgstr ""
+"Déclencheur %1 : pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
+
+#: main.cpp:1191
+msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
+msgstr "%1 (%2) gelé trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
+
+#: main.cpp:1201
+msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
+msgstr ""
+"Impossible de geler %1 (%2) : illisible ou gelé par un autre composant"
+
+#: main.cpp:1226
+msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
+msgstr "Arrêt demandé, dégel de %1 cgroup(s) gelé(s)"
+
+#: main.cpp:1233
+msgid "All frozen cgroups thawed, exiting"
+msgstr "Tous les cgroups gelés ont été dégelés, fermeture"
+
+#: main.cpp:1237
+msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
+msgstr "Dégel incomplet (%1 cgroup(s) restant(s)), nouvelle tentative"
+
+#: main.cpp:1335
+msgid "Window closing, thawing %1 frozen cgroup(s)"
+msgstr "Fermeture de la fenêtre, dégel de %1 cgroup(s) gelé(s)"
+
+#: main.cpp:1337
+msgid "Close blocked: thaw failed, retrying"
+msgstr "Fermeture bloquée : échec du dégel, nouvelle tentative"
+
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] "%1 application encore en pause"
+msgstr[1] "%1 applications encore en pause"
+
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
+msgstr ""
+"Fermer la fenêtre les reprend immédiatement, et le système risque de redevenir "
+"non responsive."
+
+#: main.cpp:1382
+msgid "Cancel"
+msgstr "Annuler"
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr "Fermer et reprendre"
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr "Fermeture annulée, %1 cgroup(s) gelé(s) restent en pause"
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr "Fermeture confirmée, reprise de %1 cgroup(s) gelé(s)"
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr "Radeau de sauvetage mémoire"
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr "Liste blanche des applications : %1 entrées"
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
+msgstr "Radeau de sauvetage mémoire démarré : pid=%1 mode=%2"

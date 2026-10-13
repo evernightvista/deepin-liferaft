@@ -1,113 +1,184 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Japanese translation for deepin-liferaft.
+# Copyright (C) 2026 Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
+# KairikiFedora Software Team <13278297951@sina.cn>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 10:18+0800\n"
-"PO-Revision-Date: 2026-08-07 12:00+0900\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
+"PO-Revision-Date: 2026-10-12 13:00+0900\n"
+"Last-Translator: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language-Team: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
-#: main.cpp:429
-msgid "Force Quit Applications"
-msgstr "アプリケーションを強制終了"
+#: main.cpp:413
+msgid "System memory information unavailable"
+msgstr "システムのメモリ情報を取得できません"
 
-#: main.cpp:469
-msgid "Your system has run out of application memory."
-msgstr "システムのアプリケーションメモリが不足しています。"
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
+msgstr "利用可能メモリ %1 · 合計メモリ %2"
 
-#: main.cpp:475
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr "スワップは未設定です"
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr "利用可能スワップ %1 · 合計スワップ %2"
+
+#: main.cpp:799
+msgid "Paused"
+msgstr "一時停止中"
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr "メモリ不足"
+
+#: main.cpp:926
 msgid ""
-"To avoid problems with your computer, quit applications you are no longer "
-"using."
-msgstr "コンピュータの問題を避けるため、使用していないアプリケーションを終了してください。"
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
+msgstr ""
+"システムの応答性を維持するため、以下のアプリを一時停止しました。復元するか、"
+"強制終了してメモリを解放できます。"
 
-#: main.cpp:509
+#: main.cpp:948
+msgid "Application"
+msgstr "アプリケーション"
+
+#: main.cpp:949
+msgid "Memory"
+msgstr "メモリ使用量"
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr "表示するアプリケーションがありません"
+
+#: main.cpp:988
 msgid "Resume"
 msgstr "再開"
 
-#: main.cpp:511
+#: main.cpp:989
+msgid "Resume app"
+msgstr "アプリを再開"
+
+#: main.cpp:991
 msgid "Force Quit"
 msgstr "強制終了"
 
-#: main.cpp:525
+#: main.cpp:992
+msgid "Force quit app"
+msgstr "アプリを強制終了"
+
+#: main.cpp:1012
 msgid "Resumed %1"
 msgstr "%1 を再開しました"
 
-#: main.cpp:527
+#: main.cpp:1014
 msgid "Resume failed for %1"
 msgstr "%1 の再開に失敗しました"
 
-#: main.cpp:541
+#: main.cpp:1028
 msgid "Force quit %1: kill=%2 thaw=%3"
 msgstr "%1 を強制終了: kill=%2 thaw=%3"
 
-#: main.cpp:543
+#: main.cpp:1030
 msgid "Force quit %1 failed: kill=%2 thaw=%3"
 msgstr "%1 の強制終了に失敗: kill=%2 thaw=%3"
 
-#: main.cpp:600
+#: main.cpp:1101
 msgid "Memory pressure above limit: %1%"
 msgstr "メモリ圧力が制限を超えています: %1%"
 
-#: main.cpp:604
+#: main.cpp:1105
 msgid "Memory pressure back below limit: %1%"
 msgstr "メモリ圧力が制限以下に戻りました: %1%"
 
-#: main.cpp:622
+#: main.cpp:1128
 msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 msgstr "無効なサンプル: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 
-#: main.cpp:633
+#: main.cpp:1143
 msgid ""
 "Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
 "swapUsed=%6%% apps=%7"
-msgstr "トリガー %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% swapUsed=%6%% apps=%7"
+msgstr ""
+"トリガー %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
 
-#: main.cpp:671
+#: main.cpp:1191
 msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 msgstr "%1 (%2) を凍結しました trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 
-#: main.cpp:680
+#: main.cpp:1201
 msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
-msgstr "%1 (%2) を凍結できません: 読み取り不能または他のコンポーネントにより凍結済み"
+msgstr ""
+"%1 (%2) を凍結できません: 読み取り不能または他のコンポーネントにより凍結済み"
 
-#: main.cpp:695
+#: main.cpp:1226
 msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
-msgstr "シャットダウンが要求されました、%1 個の凍結されたcgroupを解凍中"
+msgstr "シャットダウンが要求されました、%1 個の凍結された cgroup を解凍中"
 
-#: main.cpp:701
+#: main.cpp:1233
 msgid "All frozen cgroups thawed, exiting"
-msgstr "すべての凍結されたcgroupが解凍されました、終了します"
+msgstr "すべての凍結された cgroup が解凍されました、終了します"
 
-#: main.cpp:704
+#: main.cpp:1237
 msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
-msgstr "解凍が不完全です（%1 個のcgroupが残っています）、再試行"
+msgstr "解凍が不完全です（%1 個の cgroup が残っています）、再試行中"
 
-#: main.cpp:734
-msgid "(Paused)"
-msgstr "（一時停止）"
-
-#: main.cpp:762
+#: main.cpp:1335
 msgid "Window closing, thawing %1 frozen cgroup(s)"
-msgstr "ウィンドウを閉じています、%1 個の凍結されたcgroupを解凍中"
+msgstr "ウィンドウを閉じています、%1 個の凍結された cgroup を解凍中"
 
-#: main.cpp:764
+#: main.cpp:1337
 msgid "Close blocked: thaw failed, retrying"
-msgstr "閉塞ブロック: 解凍に失敗、再試行"
+msgstr "クローズをブロック: 解凍に失敗、再試行中"
 
-#: main.cpp:807
-msgid "Deepin Liferaft"
-msgstr "Deepin Liferaft"
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] "%1 個のアプリケーションが一時停止中です"
 
-#: main.cpp:810
-msgid "Deepin Liferaft started: pid=%1 mode=%2"
-msgstr "Deepin Liferaft が起動しました: pid=%1 mode=%2"
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
+msgstr ""
+"ウィンドウを閉じると即座に再開され、システムが再び応答しなくなる可能性がありま"
+"す。"
+
+#: main.cpp:1382
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr "閉じて再開"
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr "クローズをキャンセル、%1 個の凍結された cgroup は一時停止のままです"
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr "クローズを確認、%1 個の凍結された cgroup を再開中"
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr "メモリ救命ボート"
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr "アプリケーションホワイトリスト: %1 件"
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
+msgstr "メモリ救命ボートが起動しました: pid=%1 mode=%2"

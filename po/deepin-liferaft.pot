@@ -1,114 +1,179 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# Copyright (C) YEAR Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 10:18+0800\n"
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: main.cpp:429
-msgid "Force Quit Applications"
+#: main.cpp:413
+msgid "System memory information unavailable"
 msgstr ""
 
-#: main.cpp:469
-msgid "Your system has run out of application memory."
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
 msgstr ""
 
-#: main.cpp:475
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr ""
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr ""
+
+#: main.cpp:799
+msgid "Paused"
+msgstr ""
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr ""
+
+#: main.cpp:926
 msgid ""
-"To avoid problems with your computer, quit applications you are no longer "
-"using."
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
 msgstr ""
 
-#: main.cpp:509
+#: main.cpp:948
+msgid "Application"
+msgstr ""
+
+#: main.cpp:949
+msgid "Memory"
+msgstr ""
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr ""
+
+#: main.cpp:988
 msgid "Resume"
 msgstr ""
 
-#: main.cpp:511
+#: main.cpp:989
+msgid "Resume app"
+msgstr ""
+
+#: main.cpp:991
 msgid "Force Quit"
 msgstr ""
 
-#: main.cpp:525
+#: main.cpp:992
+msgid "Force quit app"
+msgstr ""
+
+#: main.cpp:1012
 msgid "Resumed %1"
 msgstr ""
 
-#: main.cpp:527
+#: main.cpp:1014
 msgid "Resume failed for %1"
 msgstr ""
 
-#: main.cpp:541
+#: main.cpp:1028
 msgid "Force quit %1: kill=%2 thaw=%3"
 msgstr ""
 
-#: main.cpp:543
+#: main.cpp:1030
 msgid "Force quit %1 failed: kill=%2 thaw=%3"
 msgstr ""
 
-#: main.cpp:600
+#: main.cpp:1101
 msgid "Memory pressure above limit: %1%"
 msgstr ""
 
-#: main.cpp:604
+#: main.cpp:1105
 msgid "Memory pressure back below limit: %1%"
 msgstr ""
 
-#: main.cpp:622
+#: main.cpp:1128
 msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 msgstr ""
 
-#: main.cpp:633
+#: main.cpp:1143
 msgid ""
 "Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
 "swapUsed=%6%% apps=%7"
 msgstr ""
 
-#: main.cpp:671
+#: main.cpp:1191
 msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 msgstr ""
 
-#: main.cpp:680
+#: main.cpp:1201
 msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
 msgstr ""
 
-#: main.cpp:695
+#: main.cpp:1226
 msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
 msgstr ""
 
-#: main.cpp:701
+#: main.cpp:1233
 msgid "All frozen cgroups thawed, exiting"
 msgstr ""
 
-#: main.cpp:704
+#: main.cpp:1237
 msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
 msgstr ""
 
-#: main.cpp:734
-msgid "(Paused)"
-msgstr ""
-
-#: main.cpp:762
+#: main.cpp:1335
 msgid "Window closing, thawing %1 frozen cgroup(s)"
 msgstr ""
 
-#: main.cpp:764
+#: main.cpp:1337
 msgid "Close blocked: thaw failed, retrying"
 msgstr ""
 
-#: main.cpp:807
-msgid "Deepin Liferaft"
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] ""
+msgstr[1] ""
+
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
 msgstr ""
 
-#: main.cpp:810
-msgid "Deepin Liferaft started: pid=%1 mode=%2"
+#: main.cpp:1382
+msgid "Cancel"
+msgstr ""
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr ""
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr ""
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr ""
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr ""
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr ""
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
 msgstr ""

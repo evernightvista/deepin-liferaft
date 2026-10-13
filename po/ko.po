@@ -1,113 +1,182 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Korean translation for deepin-liferaft.
+# Copyright (C) 2026 Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
+# KairikiFedora Software Team <13278297951@sina.cn>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 10:18+0800\n"
-"PO-Revision-Date: 2026-08-07 12:00+0900\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
+"PO-Revision-Date: 2026-10-12 14:00+0900\n"
+"Last-Translator: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language-Team: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
-#: main.cpp:429
-msgid "Force Quit Applications"
-msgstr "응용 프로그램 강제 종료"
+#: main.cpp:413
+msgid "System memory information unavailable"
+msgstr "시스템 메모리 정보를 사용할 수 없음"
 
-#: main.cpp:469
-msgid "Your system has run out of application memory."
-msgstr "시스템의 응용 프로그램 메모리가 부족합니다."
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
+msgstr "사용 가능 메모리 %1 · 전체 메모리 %2"
 
-#: main.cpp:475
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr "스왑이 설정되지 않음"
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr "사용 가능 스왑 %1 · 전체 스왑 %2"
+
+#: main.cpp:799
+msgid "Paused"
+msgstr "일시 중지됨"
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr "메모리 부족"
+
+#: main.cpp:926
 msgid ""
-"To avoid problems with your computer, quit applications you are no longer "
-"using."
-msgstr "컴퓨터 문제를 방지하려면 사용하지 않는 응용 프로그램을 종료하십시오."
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
+msgstr ""
+"시스템 응답성을 유지하기 위해 다음 앱을 일시 중지했습니다. 복원하거나 강제 종료"
+"하여 메모리를 확보할 수 있습니다."
 
-#: main.cpp:509
+#: main.cpp:948
+msgid "Application"
+msgstr "애플리케이션"
+
+#: main.cpp:949
+msgid "Memory"
+msgstr "메모리 사용량"
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr "표시할 애플리케이션이 없습니다"
+
+#: main.cpp:988
 msgid "Resume"
 msgstr "재개"
 
-#: main.cpp:511
+#: main.cpp:989
+msgid "Resume app"
+msgstr "앱 재개"
+
+#: main.cpp:991
 msgid "Force Quit"
 msgstr "강제 종료"
 
-#: main.cpp:525
+#: main.cpp:992
+msgid "Force quit app"
+msgstr "앱 강제 종료"
+
+#: main.cpp:1012
 msgid "Resumed %1"
 msgstr "%1 재개됨"
 
-#: main.cpp:527
+#: main.cpp:1014
 msgid "Resume failed for %1"
 msgstr "%1 재개 실패"
 
-#: main.cpp:541
+#: main.cpp:1028
 msgid "Force quit %1: kill=%2 thaw=%3"
 msgstr "%1 강제 종료: kill=%2 thaw=%3"
 
-#: main.cpp:543
+#: main.cpp:1030
 msgid "Force quit %1 failed: kill=%2 thaw=%3"
 msgstr "%1 강제 종료 실패: kill=%2 thaw=%3"
 
-#: main.cpp:600
+#: main.cpp:1101
 msgid "Memory pressure above limit: %1%"
 msgstr "메모리 압력이 제한 초과: %1%"
 
-#: main.cpp:604
+#: main.cpp:1105
 msgid "Memory pressure back below limit: %1%"
 msgstr "메모리 압력이 제한 미만으로 복귀: %1%"
 
-#: main.cpp:622
+#: main.cpp:1128
 msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 msgstr "잘못된 샘플: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 
-#: main.cpp:633
+#: main.cpp:1143
 msgid ""
 "Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
 "swapUsed=%6%% apps=%7"
-msgstr "트리거 %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% swapUsed=%6%% apps=%7"
+msgstr ""
+"트리거 %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
 
-#: main.cpp:671
+#: main.cpp:1191
 msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 msgstr "%1 (%2) 동결됨 trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 
-#: main.cpp:680
+#: main.cpp:1201
 msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
 msgstr "%1 (%2) 동결 불가: 읽을 수 없거나 다른 구성 요소에 의해 동결됨"
 
-#: main.cpp:695
+#: main.cpp:1226
 msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
 msgstr "종료 요청됨, %1개의 동결된 cgroup 해동 중"
 
-#: main.cpp:701
+#: main.cpp:1233
 msgid "All frozen cgroups thawed, exiting"
 msgstr "모든 동결된 cgroup 해동됨, 종료"
 
-#: main.cpp:704
+#: main.cpp:1237
 msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
 msgstr "해동 불완전 (%1 cgroup 남음), 재시도"
 
-#: main.cpp:734
-msgid "(Paused)"
-msgstr "(일시 중지)"
-
-#: main.cpp:762
+#: main.cpp:1335
 msgid "Window closing, thawing %1 frozen cgroup(s)"
 msgstr "창 닫는 중, %1개의 동결된 cgroup 해동 중"
 
-#: main.cpp:764
+#: main.cpp:1337
 msgid "Close blocked: thaw failed, retrying"
 msgstr "닫기 차단됨: 해동 실패, 재시도"
 
-#: main.cpp:807
-msgid "Deepin Liferaft"
-msgstr "Deepin Liferaft"
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] "%1개 애플리케이션이 여전히 일시 중지됨"
 
-#: main.cpp:810
-msgid "Deepin Liferaft started: pid=%1 mode=%2"
-msgstr "Deepin Liferaft 시작됨: pid=%1 mode=%2"
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
+msgstr ""
+"창을 닫으면 즉시 재개되며 시스템이 다시 응답하지 않을 수 있습니다."
+
+#: main.cpp:1382
+msgid "Cancel"
+msgstr "취소"
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr "닫고 재개"
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr "닫기 취소됨, %1개 동결된 cgroup이 일시 중지 상태로 유지"
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr "닫기 확인됨, %1개 동결된 cgroup 재개 중"
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr "메모리 구명정"
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr "애플리케이션 화이트리스트: %1개 항목"
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
+msgstr "메모리 구명정 시작됨: pid=%1 mode=%2"

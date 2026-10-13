@@ -1,0 +1,181 @@
+# Traditional Chinese translation for deepin-liferaft.
+# Copyright (C) 2026 Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
+# KairikiFedora Software Team <13278297951@sina.cn>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
+"PO-Revision-Date: 2026-10-12 14:00+0800\n"
+"Last-Translator: KairikiFedora Software Team <13278297951@sina.cn>\n"
+"Language-Team: KairikiFedora Software Team <13278297951@sina.cn>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: main.cpp:413
+msgid "System memory information unavailable"
+msgstr "無法取得系統記憶體資訊"
+
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
+msgstr "可用記憶體 %1 · 總記憶體 %2"
+
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr "未設定交換空間"
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr "可用交換 %1 · 總交換 %2"
+
+#: main.cpp:799
+msgid "Paused"
+msgstr "已暫停"
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr "記憶體不足"
+
+#: main.cpp:926
+msgid ""
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
+msgstr ""
+"為維持系統回應能力，已暫停以下應用程式。您可以還原它們，或強制結束以釋放記憶"
+"體。"
+
+#: main.cpp:948
+msgid "Application"
+msgstr "應用程式"
+
+#: main.cpp:949
+msgid "Memory"
+msgstr "記憶體使用量"
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr "沒有可顯示的應用程式"
+
+#: main.cpp:988
+msgid "Resume"
+msgstr "還原"
+
+#: main.cpp:989
+msgid "Resume app"
+msgstr "還原應用程式"
+
+#: main.cpp:991
+msgid "Force Quit"
+msgstr "強制結束"
+
+#: main.cpp:992
+msgid "Force quit app"
+msgstr "強制結束應用程式"
+
+#: main.cpp:1012
+msgid "Resumed %1"
+msgstr "已還原 %1"
+
+#: main.cpp:1014
+msgid "Resume failed for %1"
+msgstr "%1 還原失敗"
+
+#: main.cpp:1028
+msgid "Force quit %1: kill=%2 thaw=%3"
+msgstr "強制結束 %1：kill=%2 thaw=%3"
+
+#: main.cpp:1030
+msgid "Force quit %1 failed: kill=%2 thaw=%3"
+msgstr "強制結束 %1 失敗：kill=%2 thaw=%3"
+
+#: main.cpp:1101
+msgid "Memory pressure above limit: %1%"
+msgstr "記憶體壓力超過限制：%1%"
+
+#: main.cpp:1105
+msgid "Memory pressure back below limit: %1%"
+msgstr "記憶體壓力恢復至限制以下：%1%"
+
+#: main.cpp:1128
+msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
+msgstr "無效樣本：pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
+
+#: main.cpp:1143
+msgid ""
+"Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
+msgstr ""
+"觸發器 %1：pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
+"swapUsed=%6%% apps=%7"
+
+#: main.cpp:1191
+msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
+msgstr "已凍結 %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
+
+#: main.cpp:1201
+msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
+msgstr "無法凍結 %1 (%2)：無法讀取或已被其他元件凍結"
+
+#: main.cpp:1226
+msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
+msgstr "已請求關機，正在解凍 %1 個凍結的 cgroup"
+
+#: main.cpp:1233
+msgid "All frozen cgroups thawed, exiting"
+msgstr "所有凍結的 cgroup 已解凍，結束"
+
+#: main.cpp:1237
+msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
+msgstr "解凍不完整（剩餘 %1 個 cgroup），重試中"
+
+#: main.cpp:1335
+msgid "Window closing, thawing %1 frozen cgroup(s)"
+msgstr "視窗關閉中，正在解凍 %1 個凍結的 cgroup"
+
+#: main.cpp:1337
+msgid "Close blocked: thaw failed, retrying"
+msgstr "關閉被阻擋：解凍失敗，重試中"
+
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] "%1 個應用程式仍處於暫停狀態"
+
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
+msgstr "關閉視窗會立即還原它們，系統可能再次變得無回應。"
+
+#: main.cpp:1382
+msgid "Cancel"
+msgstr "取消"
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr "關閉並還原"
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr "關閉已取消，%1 個凍結的 cgroup 保持暫停"
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr "關閉已確認，正在還原 %1 個凍結的 cgroup"
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr "記憶體救生筏"
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr "應用程式白名單：%1 條"
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
+msgstr "記憶體救生筏已啟動：pid=%1 mode=%2"

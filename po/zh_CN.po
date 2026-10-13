@@ -1,113 +1,180 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Simplified Chinese translation for deepin-liferaft.
+# Copyright (C) 2026 Ston Jia
+# This file is distributed under the same license as the deepin-liferaft package.
+# KairikiFedora Software Team <13278297951@sina.cn>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 10:18+0800\n"
-"PO-Revision-Date: 2026-08-07 12:00+0800\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: deepin-liferaft 45.0.0\n"
+"Report-Msgid-Bugs-To: ston.jia@outlook.com\n"
+"POT-Creation-Date: 2026-10-12 12:21+0000\n"
+"PO-Revision-Date: 2026-10-12 13:00+0800\n"
+"Last-Translator: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language-Team: KairikiFedora Software Team <13278297951@sina.cn>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
-#: main.cpp:429
-msgid "Force Quit Applications"
-msgstr "强制退出应用程序"
+#: main.cpp:413
+msgid "System memory information unavailable"
+msgstr "无法获取系统内存信息"
 
-#: main.cpp:469
-msgid "Your system has run out of application memory."
-msgstr "您的系统应用程序内存已用完。"
+#: main.cpp:414
+msgid "Available memory %1 · Total memory %2"
+msgstr "可用内存 %1 · 总内存 %2"
 
-#: main.cpp:475
+#: main.cpp:425
+msgid "Swap not configured"
+msgstr "未配置交换空间"
+
+#: main.cpp:426
+msgid "Available swap %1 · Total swap %2"
+msgstr "可用交换 %1 · 总交换 %2"
+
+#: main.cpp:799
+msgid "Paused"
+msgstr "已暂停"
+
+#: main.cpp:925
+msgid "Low memory"
+msgstr "内存不足"
+
+#: main.cpp:926
 msgid ""
-"To avoid problems with your computer, quit applications you are no longer "
-"using."
-msgstr "为避免计算机出现问题，请退出不再使用的应用程序。"
+"The following apps have been paused to keep your system responsive. Resume "
+"them, or force quit to free up memory."
+msgstr ""
+"为保持系统响应，已暂停以下应用。可以恢复它们，或强制退出以释放内存。"
 
-#: main.cpp:509
+#: main.cpp:948
+msgid "Application"
+msgstr "应用程序"
+
+#: main.cpp:949
+msgid "Memory"
+msgstr "内存占用"
+
+#: main.cpp:968
+msgid "No applications to show"
+msgstr "没有可显示的应用程序"
+
+#: main.cpp:988
 msgid "Resume"
-msgstr "继续"
+msgstr "恢复"
 
-#: main.cpp:511
+#: main.cpp:989
+msgid "Resume app"
+msgstr "恢复应用"
+
+#: main.cpp:991
 msgid "Force Quit"
 msgstr "强制退出"
 
-#: main.cpp:525
+#: main.cpp:992
+msgid "Force quit app"
+msgstr "强制退出应用"
+
+#: main.cpp:1012
 msgid "Resumed %1"
 msgstr "已恢复 %1"
 
-#: main.cpp:527
+#: main.cpp:1014
 msgid "Resume failed for %1"
 msgstr "%1 恢复失败"
 
-#: main.cpp:541
+#: main.cpp:1028
 msgid "Force quit %1: kill=%2 thaw=%3"
 msgstr "强制退出 %1：kill=%2 thaw=%3"
 
-#: main.cpp:543
+#: main.cpp:1030
 msgid "Force quit %1 failed: kill=%2 thaw=%3"
 msgstr "强制退出 %1 失败：kill=%2 thaw=%3"
 
-#: main.cpp:600
+#: main.cpp:1101
 msgid "Memory pressure above limit: %1%"
 msgstr "内存压力超过限制：%1%"
 
-#: main.cpp:604
+#: main.cpp:1105
 msgid "Memory pressure back below limit: %1%"
 msgstr "内存压力恢复到限制以下：%1%"
 
-#: main.cpp:622
+#: main.cpp:1128
 msgid "Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4"
 msgstr "无效样本：压力=%1 内存=%2 userPgscan=%3 appSample=%4"
 
-#: main.cpp:633
+#: main.cpp:1143
 msgid ""
 "Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 memUsed=%5%% "
 "swapUsed=%6%% apps=%7"
-msgstr "触发器 %1：压力=%2%% 持续时间=%3ms 最近回收=%4 内存使用=%5%% 交换使用=%6%% 应用=%7"
+msgstr ""
+"触发器 %1：压力=%2%% 持续时间=%3ms 最近回收=%4 内存使用=%5%% 交换使用=%6%% "
+"应用=%7"
 
-#: main.cpp:671
+#: main.cpp:1191
 msgid "Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB"
 msgstr "已冻结 %1 (%2) 触发器=%3 回收=%4MB 交换=%5MB 内存=%6MB"
 
-#: main.cpp:680
+#: main.cpp:1201
 msgid "Cannot freeze %1 (%2): unreadable or frozen by another component"
 msgstr "无法冻结 %1 (%2)：不可读或被其他组件冻结"
 
-#: main.cpp:695
+#: main.cpp:1226
 msgid "Shutdown requested, thawing %1 frozen cgroup(s)"
 msgstr "已请求关机，正在解冻 %1 个冻结的 cgroup"
 
-#: main.cpp:701
+#: main.cpp:1233
 msgid "All frozen cgroups thawed, exiting"
 msgstr "所有冻结的 cgroup 已解冻，退出"
 
-#: main.cpp:704
+#: main.cpp:1237
 msgid "Thaw incomplete (%1 cgroup(s) remain), retrying"
 msgstr "解冻不完整（剩余 %1 个 cgroup），重试"
 
-#: main.cpp:734
-msgid "(Paused)"
-msgstr "（已暂停）"
-
-#: main.cpp:762
+#: main.cpp:1335
 msgid "Window closing, thawing %1 frozen cgroup(s)"
-msgstr "窗口关闭，正在解冻 %1 个冻结的 cgroup"
+msgstr "窗口关闭中，正在解冻 %1 个冻结的 cgroup"
 
-#: main.cpp:764
+#: main.cpp:1337
 msgid "Close blocked: thaw failed, retrying"
 msgstr "关闭被阻止：解冻失败，重试"
 
-#: main.cpp:807
-msgid "Deepin Liferaft"
-msgstr "Deepin Liferaft"
+#: main.cpp:1365
+msgid "%1 application is still paused"
+msgid_plural "%1 applications are still paused"
+msgstr[0] "%1 个应用程序仍处于暂停状态"
 
-#: main.cpp:810
-msgid "Deepin Liferaft started: pid=%1 mode=%2"
-msgstr "Deepin Liferaft 已启动：pid=%1 mode=%2"
+#: main.cpp:1375
+msgid ""
+"Closing the window resumes them immediately, and the system may become "
+"unresponsive again."
+msgstr "关闭窗口会立即恢复它们，系统可能再次变得无响应。"
+
+#: main.cpp:1382
+msgid "Cancel"
+msgstr "取消"
+
+#: main.cpp:1383
+msgid "Close and Resume"
+msgstr "关闭并恢复"
+
+#: main.cpp:1400
+msgid "Close cancelled, %1 frozen cgroup(s) stay paused"
+msgstr "关闭已取消，%1 个冻结的 cgroup 保持暂停"
+
+#: main.cpp:1404
+msgid "Close confirmed, resuming %1 frozen cgroup(s)"
+msgstr "关闭已确认，正在恢复 %1 个冻结的 cgroup"
+
+#: main.cpp:1447
+msgid "Memory Liferaft"
+msgstr "内存救生筏"
+
+#: main.cpp:1451
+msgid "Application whitelist: %1 entries"
+msgstr "应用白名单：%1 条"
+
+#: main.cpp:1454
+msgid "Memory Liferaft started: pid=%1 mode=%2"
+msgstr "内存救生筏已启动：pid=%1 mode=%2"

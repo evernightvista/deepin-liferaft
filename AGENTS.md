@@ -6,37 +6,59 @@ These instructions apply to the entire `deepin-liferaft` repository.
 
 ## Project
 
-Deepin Liferaft is a single-binary DTK 6 application. A systemd user service runs it with `--hidden`; sustained Fedora-style systemd-oomd pressure or swap conditions open a macOS-style force-quit dialog. DDE `app-DDE-*` cgroups are the application boundary.
+Memory Liferaft (`deepin-liferaft`, Chinese 内存救生筏) is a single-binary
+**Qt6 / KDE Frameworks 6** application. A systemd user service runs it with
+`--hidden`; sustained Fedora-style systemd-oomd pressure or swap conditions open
+a Qt6 force-quit dialog. Application boundaries are DDE `app-DDE-*` launch
+groups, KDE/systemd transient app units `app-<id>@<rand>.service`, and
+self-managed scopes `app-<id>-<pid>.scope`, all under
+`user@UID.service/app.slice`.
+
+This is a port of the original DTK 6 application. The DTK widget set was
+replaced with native Qt6 Widgets and the DTK translation system with KF6
+`I18n`. The `debian/` packaging directory and the `data/grub/` PSI bootloader
+snippet were removed; RPM is now the packaging target. `appIdFromUnit` and
+`appProcs` were extended to recognize KDE Plasma sessions (systemd transient
+`app-<id>@<rand>.service` units), not just DDE launch groups and scopes.
 
 ## Layout
 
-- `main.cpp`: monitoring policy, cgroup ownership, lifecycle cleanup, and DTK UI
-- `CMakeLists.txt`: build, CTest, resources, and installation
-- `resources.qrc`: embedded application resources
+- `main.cpp`: monitoring policy, cgroup ownership, lifecycle cleanup, and Qt6 UI
+- `CMakeLists.txt`: build, CTest, KF6 i18n catalog compilation, and installation
+- `po/`: gettext translation sources — `deepin-liferaft.pot` template plus
+  `de.po`, `fr.po`, `ja.po`, `ko.po`, `zh_CN.po`, `zh_TW.po`
 - `data/icons/`: application icon source
-- `deepin-liferaft.desktop`: DDE application entry
+- `data/whitelist`: packaged whitelist defaults (package level of the
+  three-level merge)
+- `deepin-liferaft.desktop`: application entry with localized Name/Comment
 - `deepin-liferaft.service`: systemd user service
 - `deepin-liferaft.1`: command manual page
-- `debian/`: Debian packaging
+- `deepin-liferaft.spec`: RPM spec (Fedora)
 - `README.md`: user and operator documentation
+- `LICENSE`: GPL-3.0-or-later
 
-Do not edit or commit generated content under `obj-*/`, `debian/deepin-liferaft/`, debhelper stamp/helper files, package artifacts, or CodeGraph databases.
+Do not edit or commit generated content under `obj-*/` or `build/`, RPM build
+trees (`~/rpmbuild/BUILD/`, `~/rpmbuild/RPMS/`, `~/rpmbuild/SRPMS/`),
+`.src.rpm` / `.rpm` artifacts, tarballs, screenshots (`*.png`), logs, local
+CodeGraph databases, or `.pi-subagents/`/`progress.md` scratch state.
 
 ## Safety Invariants
 
 Memory-pressure code is safety critical. Preserve all of these invariants:
 
 - Parse cgroup `memory.pressure` `full avg10`, not `some`.
-- Treat failed or incomplete PSI, `memory.stat`, cgroup value, and `/proc/meminfo` reads as invalid samples. Never convert failure into zero usage or a trigger.
-- Never freeze the cgroup containing Deepin Liferaft.
+- Treat failed or incomplete PSI, `memory.stat`, cgroup value, and `/proc/meminfo` reads as invalid samples. Never convert failure into zero usage or a trigger. The dialog's memory and swap lines follow the same rule: an invalid sample prints no numbers.
+- Never freeze the cgroup containing Memory Liferaft itself.
 - Read `cgroup.freeze` before freezing. Do not claim or thaw a cgroup already frozen by another component.
 - Track every cgroup successfully frozen by this process.
-- Resume all owned cgroups before accepting a window close, normal process exit, `SIGTERM`, or `SIGINT`.
+- Resume all owned cgroups before accepting a window close, normal process exit, `SIGTERM`, or `SIGINT`. When the window is closed while it still owns frozen cgroups, confirm with the user first (`needsCloseConfirmation`, covered by `--self-test`) and keep the window open if they cancel. `SIGTERM`, `SIGINT`, and service stops thaw without asking.
 - If thaw fails, retain ownership and retry. Never silently clear the recovery set.
 - After `cgroup.kill`, thaw a surviving cgroup before releasing ownership.
-- Keep frozen applications visible in the table even when they fall outside the normal top-ten memory list.
+- Keep frozen applications visible in the list even when they fall outside the normal top-ten memory list.
 
 Do not test freeze/kill behavior on real user applications. Use a disposable systemd user cgroup or temporary fake control files.
+
+The systemd user service sets `MemoryMin=16M` so the monitor's own cgroup keeps hard reclaim protection and can still poll PSI under extreme pressure (requires systemd 253+; older versions ignore the property). Preserve it when editing `deepin-liferaft.service`.
 
 ## Policy
 
@@ -51,34 +73,126 @@ Current workstation policy:
 
 Pressure candidates sort by latest `pgscan` delta, then `memory.current`. Swap candidates sort by `memory.swap.current`. The UI may freeze up to three candidates; it does not automatically kill them.
 
-If policy values change, update `README.md`, tests, and Debian package description in the same change.
+If policy values change, update `README.md`, tests, and the RPM `%description` in the same change.
+
+## Whitelist
+
+Whitelisted applications never appear in the dialog and are never frozen or force quit. Entries are desktop file IDs — the same IDs parsed from cgroup unit names (for example `google-chrome` matches `app-DDE-google\x2dchrome@....service`). One ID per line; blank lines and `#` comments are ignored.
+
+Three levels merge as one set (vim-style):
+
+- Package defaults: `/usr/share/deepin-liferaft/whitelist` (built from `data/whitelist`)
+- Administrator: `/etc/deepin-liferaft/whitelist`
+- Per-user: `~/.config/deepin-liferaft/whitelist`
+
+The packaged defaults protect the monitor itself (`deepin-liferaft`), the DDE
+screen locker (`dde-lock`) and desktop shell (`dde-shell`), and the KDE Plasma
+desktop core: `plasmashell` (panel / taskbar), `kscreenlocker_greet`
+(lock-screen greeter), `ksmserver` (session manager, also drives the screen
+locker), `kwin_x11` / `kwin_wayland` (window manager), `kglobalaccel` (global
+shortcuts), and `kded6` (KF6 background daemon). These IDs are matched against
+the desktop file ID parsed from the cgroup unit name, so KDE Plasma sessions
+started via systemd transient units (`app-<id>@<rand>.service`) are protected
+the same way DDE launch groups (`app-DDE-<id>@…`) are. The whitelist is loaded
+once at startup, so restart the service after editing. `parseWhitelist`,
+`loadWhitelist`, the `appProcs` whitelist filter, and KDE unit parsing
+(`app-<id>@<rand>.service`) are covered by `--self-test`.
 
 ## Resource Constraints
 
 Keep hidden mode cheap:
 
-- Do not construct table widgets, labels, buttons, or load desktop icons before the dialog is shown.
+- Do not construct list widgets, labels, buttons, or load desktop icons before the dialog is shown.
 - Do not scan all application cgroups while pressure is low and the dialog is hidden.
 - Cache desktop metadata; it is static for the lifetime of the daemon.
 - Do not add a dependency for parsing or logic available through Qt, libc, procfs, or cgroup v2.
 
 Measure changes with `/proc/PID/smaps_rollup`, not RSS alone. Report PSS and private dirty memory using equal startup timing.
 
+## UI Style
+
+The dialog follows Deepin's design language, not macOS alert styling, but
+implements it with plain Qt6 Widgets instead of DTK. Preserve these
+conventions:
+
+- Use `QPalette` for all colors. Never hard-code text or background colors,
+  and never leave margins or a layout that only suits one theme; the dialog
+  must follow light and dark themes and the system accent color automatically.
+- The application list is a `QListView` with the `AppRowDelegate`
+  (`QStyledItemDelegate`) that draws the row background and content itself,
+  copying `BaseTableView::drawRow()` from deepin-system-monitor: even rows use
+  `QPalette::AlternateBase`, odd rows `QPalette::Base`, the selected row
+  `QPalette::Highlight`, a hovered row a 10-value-darker base, all rounded by
+  `style()->pixelMetric(QStyle::PM_FrameRadius)`. `WA_Hover` is enabled on
+  the viewport so rows highlight under the pointer, and `Application` /
+  `Memory` captions above the list line up with the row content rect
+  (`LIST_CONTENT_MARGIN`). Update rows in the model instead of rebuilding the
+  list while the dialog is open.
+- Window chrome comes from `QMainWindow`. The alert header is the rounded
+  `AlertBanner` with its `AlertBadge`; `AlertBanner::setMemoryStatus()` prints
+  the machine's total and available memory and its swap (`memoryLine` /
+  `swapLine`, refreshed from the poll sample in `refreshStatus()`) in a
+  `QPalette::Text` data line under the message. The footer is a `QFrame`
+  (`HLine` shape) above right-aligned `Resume` (`QPushButton`) and
+  `Force Quit` (destructive-styled `QPushButton`) buttons. Closing while
+  cgroups are still paused asks for confirmation through a `QDialog` whose
+  default button is `Cancel`.
+- The application icon is loaded with `QIcon::fromTheme("deepin-liferaft")`,
+  not from a bundled `.qrc`. The hicolor icon theme is a runtime requirement.
+- For visual checks, `w.grab()` on `QT_QPA_PLATFORM=offscreen` captures the
+  client area; set `QGuiApplication::setPalette(...)` before showing the window
+  to get a faithful light or dark snapshot.
+
+## Translations
+
+User-visible strings are wrapped with the `L()` macro, which expands to KF6
+`i18n()` when `HAVE_KF6` is defined (default for this build) and to
+`QObject::tr()` otherwise. Source catalogs are gettext `.po` files in `po/`
+(`de`, `fr`, `ja`, `ko`, `zh_CN`, `zh_TW`); CMake compiles them to `.mo` via
+KF6's `ki18n_install(po)` and installs them to
+`share/locale/<lang>/LC_MESSAGES/deepin-liferaft.mo`. Building requires
+`gettext` and `kf6-ki18n-devel`.
+
+After adding or changing user-visible strings, regenerate the template and
+update each catalog:
+
+```bash
+xgettext --package-name=deepin-liferaft --package-version=45.0.0 \
+         --msgid-bugs-address=ston.jia@outlook.com \
+         --keyword=L --keyword=i18n -o po/deepin-liferaft.pot \
+         -C --from-code=UTF-8 --no-location main.cpp
+for l in de fr ja ko zh_CN zh_TW; do
+    msgmerge --update --no-location po/$l.po po/deepin-liferaft.pot
+done
+```
+
+Translate the new entries in every catalog before committing. `main.cpp`
+binds the `deepin-liferaft` domain via KF6's `KLocalizedString::setApplicationDomain`
+so a binary built in `build/` picks up installed catalogs at runtime.
+
+## Logging
+
+Logging goes through Qt's categorized logging (`qInfo` / `qWarning`); under the
+user service, messages land in the user journal. Use `qInfo` for normal state
+changes (startup, threshold crossings, trigger decisions, freeze/kill, resume,
+shutdown) and `qWarning` for failures and invalid samples. The service unit sets
+`QT_LOGGING_RULES=*.info=true` so Info-level messages reach journald; preserve it.
+
 ## Build and Test
 
 Run after every functional change:
 
 ```bash
-cmake -S . -B obj-x86_64-linux-gnu
-cmake --build obj-x86_64-linux-gnu --clean-first -j"$(nproc)"
-ctest --test-dir obj-x86_64-linux-gnu --output-on-failure
-./obj-x86_64-linux-gnu/deepin-liferaft --self-test
+cmake -S . -B build
+cmake --build build --clean-first -j"$(nproc)"
+ctest --test-dir build --output-on-failure
+./build/deepin-liferaft --self-test
 ```
 
 UI smoke test in a graphical session:
 
 ```bash
-env DISPLAY=:0 ./obj-x86_64-linux-gnu/deepin-liferaft
+env DISPLAY=:0 ./build/deepin-liferaft
 ```
 
 Verify the window title, application icon, list layout, selection, Resume state, Force Quit behavior, and close cleanup. Verify hidden mode creates no window.
@@ -87,14 +201,30 @@ Verify signal cleanup by starting `--hidden`, sending `SIGTERM`, and checking sh
 
 ## Packaging
 
-Build the Debian package with:
+Build the RPM package with:
 
 ```bash
-dpkg-buildpackage -us -uc -b
+spectool -g -R deepin-liferaft.spec
+rpmbuild -ba deepin-liferaft.spec
 ```
 
-Inspect the package for the binary, user service, desktop entry, scalable icon, README, and generated debhelper service enable scripts. Run `systemd-analyze --user verify` on the packaged unit.
+Inspect the package for the binary, user service, desktop entry, scalable icon,
+packaged whitelist defaults, compiled translation catalogs (`%find_lang` output),
+README, and manual page. Run `systemd-analyze --user verify` on the packaged
+unit. The `%post` script enables the user unit globally; the `%preun` script
+disables it on full uninstall.
+
+## Kernel PSI
+
+`deepin-liferaft` reads `memory.pressure`, which requires kernel PSI. The
+`data/grub/` directory and the GRUB snippet it shipped were removed in this
+port. Document PSI enabling in `README.md` and `deepin-liferaft.1` instead of
+shipping a bootloader hook. Do not reintroduce Debian/GRUB packaging hooks.
 
 ## Git
 
-Keep commits scoped. Do not include build directories, generated Debian state, `.deb` files, tarballs, logs, temporary screenshots, or local CodeGraph state. Before committing, inspect `git status`, staged diff, tests, package contents, and remote configuration.
+Keep commits scoped. Do not include build directories, generated RPM state,
+`.rpm` / `.src.rpm` files, tarballs, logs, temporary screenshots, local
+CodeGraph state, or Pi scratch state (`.pi-subagents/`, `progress.md`). Before
+committing, inspect `git status`, staged diff, tests, package contents, and
+remote configuration.

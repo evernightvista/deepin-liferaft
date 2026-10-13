@@ -1,0 +1,48 @@
+# deepin-liferaft system whitelist.
+#
+# One desktop file ID per line; blank lines and '#' comments are ignored.
+# The ID is the same one parsed from the cgroup unit name, for example
+# "google-chrome" for app-DDE-google\x2dchrome@....service, or
+# "plasmashell" for app-plasmashell@....service on KDE Plasma sessions.
+#
+# Whitelisted applications never appear in the force-quit dialog and are
+# never frozen or killed.
+#
+# Levels are merged as one set (vim-style):
+#   /usr/share/deepin-liferaft/whitelist   package defaults (this file)
+#   /etc/deepin-liferaft/whitelist         administrator entries
+#   ~/.config/deepin-liferaft/whitelist    per-user entries
+# Changes take effect after restarting deepin-liferaft.
+
+# === Monitor (defense in depth; its own cgroup is also skipped
+#     by the freeze path) ===
+deepin-liferaft
+
+# === Deepin (DDE) desktop core ===
+# Freezing the screen locker would block unlocking the session.
+dde-lock
+# Desktop shell (taskbar, launcher); freezing it makes the desktop
+# unusable.
+dde-shell
+
+# === KDE Plasma desktop core ===
+# Plasma shell: the panel / taskbar / desktop / widget host. Freezing it
+# removes the taskbar, launcher and window list, leaving the desktop
+# unusable — equivalent to freezing dde-shell on DDE.
+plasmashell
+# KDE session manager: handles session save/restore and drives the screen
+# locker. Freezing it can wedge logout and lock/unlock flows.
+ksmserver
+# KDE screen locker greeter: the actual lock-screen UI the user sees.
+# Freezing it blocks unlocking the session, exactly like dde-lock.
+kscreenlocker_greet
+# KDE window manager (X11 / Wayland). Freezing it freezes input routing
+# and window management for the whole session.
+kwin_x11
+kwin_wayland
+# KDE global shortcuts daemon: Meta key, volume keys, krunner hotkey.
+# Freezing it disables global keyboard shortcuts.
+kglobalaccel
+# KDE daemon (KF6): hosts background services such as removable-device
+# automounting and FreeDesktop notifications.
+kded6

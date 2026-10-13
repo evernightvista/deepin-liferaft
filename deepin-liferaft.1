@@ -1,4 +1,4 @@
-.TH DEEPIN-LIFERAFT 1 "July 2026" "deepin-liferaft 0.1.0" "User Commands"
+.TH DEEPIN-LIFERAFT 1 "October 2026" "deepin-liferaft 45.0.0" "User Commands"
 .SH NAME
 deepin-liferaft \- monitor memory pressure and present a force-quit dialog
 .SH SYNOPSIS
@@ -8,30 +8,116 @@ deepin-liferaft \- monitor memory pressure and present a force-quit dialog
 .B deepin-liferaft --self-test
 .SH DESCRIPTION
 .B deepin-liferaft
-monitors the current systemd user cgroup for Fedora-style systemd-oomd memory pressure and swap conditions.
-When pressure remains unsafe, it freezes selected DDE application cgroups and opens a macOS-style dialog that can resume or force quit them.
+monitors the current systemd user cgroup for Fedora-style systemd-oomd memory
+pressure and swap conditions.
+When pressure remains unsafe, it freezes selected DDE application cgroups and
+opens a Qt6 / KDE Frameworks 6 dialog that can resume or force quit them.
+The dialog uses native Qt6 styling: a rounded alert banner that reports the
+machine's total and available memory and its swap, an application list that
+tags frozen cgroups with
+.BR Paused ,
+and right-aligned
+.B Resume
+and
+.B "Force Quit"
+buttons.
+It follows the system light or dark theme and accent color.
+The memory and swap figures come from the same one-second sample as the
+pressure decision, so they match what triggered the dialog.
 .PP
-Closing the dialog, stopping the service, or sending SIGTERM or SIGINT thaws every cgroup frozen by this process before exit.
+Closing the dialog, stopping the service, or sending SIGTERM or SIGINT thaws
+every cgroup frozen by this process before exit.
+While applications are still paused, closing the window asks for confirmation
+first, because closing resumes them; cancelling keeps the window and the
+paused applications.
+A service stop or signal has no one to answer a prompt, so it thaws and
+exits without asking.
+The systemd user service sets
+.B MemoryMin=16M
+so the monitor's own cgroup keeps hard reclaim protection and can still poll
+PSI and raise the dialog under extreme memory pressure (requires systemd 253
+or newer, and ancestor cgroups with memory.min configured, as Deepin sessions
+provide).
+.SH WHITELIST
+Whitelisted applications never appear in the dialog and are never frozen or
+force quit.
+Entries are desktop file IDs, the same IDs parsed from cgroup unit names
+(for example
+.B google-chrome
+matches app-DDE-google\\x2dchrome@....service), one per line; blank lines
+and '#' comments are ignored.
+Three levels are merged into one set, following the vim configuration model:
+package defaults in
+.IR /usr/share/deepin-liferaft/whitelist ,
+system administrator entries in
+.IR /etc/deepin-liferaft/whitelist ,
+and per-user entries in
+.IR ~/.config/deepin-liferaft/whitelist .
+The whitelist is loaded once at startup; restart the service after editing.
 .SH OPTIONS
 .TP
 .B --hidden
-Run the pressure monitor without showing the dialog at startup. This is the mode used by the systemd user service.
+Run the pressure monitor without showing the dialog at startup. This is the
+mode used by the systemd user service.
+A SIGTERM or SIGINT that stops the service resumes the paused applications
+without the interactive confirmation.
 .TP
 .B --self-test
-Run built-in policy, parsing, formatting, and freezer ownership checks, then exit with status zero on success.
+Run built-in policy, parsing, formatting, and freezer ownership checks,
+then exit with status zero on success.
 .SH FILES
 .TP
 .I /usr/lib/systemd/user/deepin-liferaft.service
 Systemd user service that starts the monitor with
 .BR --hidden .
 .TP
+.I /usr/share/deepin-liferaft/whitelist
+Packaged whitelist defaults. See
+.BR WHITELIST .
+.TP
+.I /etc/deepin-liferaft/whitelist
+System administrator whitelist entries.
+.TP
+.I ~/.config/deepin-liferaft/whitelist
+Per-user whitelist entries.
+.TP
+.I /usr/share/locale/<lang>/LC_MESSAGES/deepin-liferaft.mo
+Compiled gettext catalogs for the supported languages:
+.BR de ,
+.BR fr ,
+.BR ja ,
+.BR ko ,
+.BR zh_CN ,
+and
+.BR zh_TW .
+.TP
 .I /sys/fs/cgroup/user.slice/user-UID.slice/user@UID.service/
-User cgroup from which memory pressure, reclaim, memory, and swap data are read.
+User cgroup from which memory pressure, reclaim, memory, and swap data are
+read.
 .SH SIGNALS
 .B SIGTERM
 and
 .B SIGINT
-request a clean shutdown. Owned frozen cgroups are thawed before the process exits.
+request a clean shutdown. Owned frozen cgroups are thawed before the process
+exits.
+.SH NOTES
+.B deepin-liferaft
+requires kernel PSI (memory.pressure).
+On kernels built with
+.BR CONFIG_PSI_DEFAULT_DISABLED=y ,
+PSI is disabled at boot and enabled by the
+.B psi=1
+kernel parameter.
+This Qt6/KF6 port no longer ships a bootloader snippet; enable PSI manually
+by appending
+.B psi=1
+to your bootloader's kernel command line (for GRUB, add it to
+.B GRUB_CMDLINE_LINUX_DEFAULT
+in
+.I /etc/default/grub
+and run
+.BR update-grub )
+and rebooting. PSI cannot be enabled at runtime on such kernels.
 .SH SEE ALSO
 .BR systemd-oomd (8),
 .BR systemd.resource-control (5),

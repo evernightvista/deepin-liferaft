@@ -1,36 +1,45 @@
-// deepin-liferaft: macOS "Your system has run out of application memory" 对话框的 Qt/KF6 克隆
-// Fedora systemd-oomd 策略触发 → 自动弹出，按 DDE 应用 cgroup 内存排序。
+// deepin-liferaft: Memory pressure dialog for Fedora systemd-oomd (Qt/KF6 port)
+// Fedora systemd-oomd 策略触发 → 自动弹出，按 DDE 应用 cgroup 内存排序，
+// 允许恢复或强制结束应用。
+#include <sys/signalfd.h>
+
 #include <QApplication>
-#include <QMainWindow>
-#include <QLabel>
-#include <QPushButton>
-#include <QSocketNotifier>
-#include <QTimer>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QTableWidget>
-#include <QHeaderView>
-#include <QIcon>
+#include <QCloseEvent>
+#include <QDialog>
 #include <QDir>
-#include <QFile>
-#include <QSet>
-#include <QHash>
 #include <QElapsedTimer>
-#include <QTemporaryDir>
-#include <QStandardPaths>
-#include <QSettings>
+#include <QFile>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QHash>
+#include <QIcon>
+#include <QItemSelectionModel>
+#include <QLabel>
 #include <QLocale>
+#include <QListView>
+#include <QMainWindow>
+#include <QPainter>
+#include <QPushButton>
+#include <QSet>
+#include <QSettings>
+#include <QShowEvent>
+#include <QSocketNotifier>
+#include <QStackedLayout>
+#include <QStandardItem>
+#include <QStandardItemModel>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QStyledItemDelegate>
-#include <QPainter>
-#include <QCloseEvent>
-#include <QShowEvent>
+#include <QTemporaryDir>
+#include <QTimer>
+#include <QVBoxLayout>
+
 #include <algorithm>
 #include <functional>
 #include <limits>
 #include <optional>
+
 #include <signal.h>
-#include <sys/signalfd.h>
 #include <unistd.h>
 
 // KDE Framework 6 本地化（可选）
@@ -57,7 +66,8 @@ static const int POLL_MS = 1000;
 
 enum class Trigger { None, Pressure, Swap };
 
-struct Proc {
+struct Proc
+{
     QString cgroup;
     quint64 memory; // bytes
     quint64 swap;
@@ -67,7 +77,8 @@ struct Proc {
     QString icon;
 };
 
-struct SystemMemory {
+struct SystemMemory
+{
     quint64 memTotal = 0;
     quint64 memAvailable = 0;
     quint64 swapTotal = 0;
@@ -75,11 +86,13 @@ struct SystemMemory {
     bool valid = false;
 };
 
-static QString userCgroupPath() {
+static QString userCgroupPath()
+{
     return QString("/sys/fs/cgroup/user.slice/user-%1.slice/user@%1.service").arg(getuid());
 }
 
-static double parseFullAvg10(const QByteArray &data) {
+static double parseFullAvg10(const QByteArray &data)
+{
     for (const auto &line : data.split('\n'))
         if (line.startsWith("full"))
             for (const auto &field : line.split(' '))
@@ -88,24 +101,30 @@ static double parseFullAvg10(const QByteArray &data) {
     return -1;
 }
 
-static double psiFullAvg10() {
+static double psiFullAvg10()
+{
     QFile f(userCgroupPath() + "/memory.pressure");
     return f.open(QIODevice::ReadOnly) ? parseFullAvg10(f.readAll()) : -1;
 }
 
-static std::optional<quint64> fileValue(const QString &path) {
+static std::optional<quint64> fileValue(const QString &path)
+{
     QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return std::nullopt;
+    if (!f.open(QIODevice::ReadOnly))
+        return std::nullopt;
     bool ok;
     const quint64 value = f.readAll().trimmed().toULongLong(&ok);
     return ok ? std::optional<quint64>(value) : std::nullopt;
 }
 
-static std::optional<quint64> memoryStatValue(const QString &cgroup, const QByteArray &key) {
+static std::optional<quint64> memoryStatValue(const QString &cgroup, const QByteArray &key)
+{
     QFile f(cgroup + "/memory.stat");
-    if (!f.open(QIODevice::ReadOnly)) return std::nullopt;
+    if (!f.open(QIODevice::ReadOnly))
+        return std::nullopt;
     for (const auto &line : f.readAll().split('\n')) {
-        if (!line.startsWith(key + ' ')) continue;
+        if (!line.startsWith(key + ' '))
+            continue;
         bool ok;
         const quint64 value = line.mid(key.size() + 1).toULongLong(&ok);
         return ok ? std::optional<quint64>(value) : std::nullopt;
@@ -113,321 +132,780 @@ static std::optional<quint64> memoryStatValue(const QString &cgroup, const QByte
     return std::nullopt;
 }
 
-static SystemMemory systemMemory() {
+static SystemMemory systemMemory()
+{
     SystemMemory out;
     unsigned seen = 0;
     QFile f("/proc/meminfo");
-    if (!f.open(QIODevice::ReadOnly)) return out;
+    if (!f.open(QIODevice::ReadOnly))
+        return out;
     for (const auto &line : f.readAll().split('\n')) {
         const auto fields = line.simplified().split(' ');
-        if (fields.size() < 2) continue;
+        if (fields.size() < 2)
+            continue;
         bool ok;
         const quint64 value = fields[1].toULongLong(&ok);
-        if (!ok || value > std::numeric_limits<quint64>::max() / 1024) continue;
+        if (!ok || value > std::numeric_limits<quint64>::max() / 1024)
+            continue;
         const quint64 bytes = value * 1024;
-        if (line.startsWith("MemTotal:")) { out.memTotal = bytes; seen |= 1; }
-        else if (line.startsWith("MemAvailable:")) { out.memAvailable = bytes; seen |= 2; }
-        else if (line.startsWith("SwapTotal:")) { out.swapTotal = bytes; seen |= 4; }
-        else if (line.startsWith("SwapFree:")) { out.swapFree = bytes; seen |= 8; }
+        if (line.startsWith("MemTotal:")) {
+            out.memTotal = bytes;
+            seen |= 1;
+        } else if (line.startsWith("MemAvailable:")) {
+            out.memAvailable = bytes;
+            seen |= 2;
+        } else if (line.startsWith("SwapTotal:")) {
+            out.swapTotal = bytes;
+            seen |= 4;
+        } else if (line.startsWith("SwapFree:")) {
+            out.swapFree = bytes;
+            seen |= 8;
+        }
     }
     out.valid = seen == 15 && out.memAvailable <= out.memTotal && out.swapFree <= out.swapTotal;
     return out;
 }
 
-static bool percentAbove(quint64 used, quint64 total, int limit) {
+static bool percentAbove(quint64 used, quint64 total, int limit)
+{
     return total > 0 && used * 100 > total * quint64(limit);
 }
 
-static bool systemSwapPressure(const SystemMemory &memory) {
-    if (!memory.valid) return false;
+static bool systemSwapPressure(const SystemMemory &memory)
+{
+    if (!memory.valid)
+        return false;
     return percentAbove(memory.memTotal - memory.memAvailable, memory.memTotal, SWAP_USED_LIMIT)
-        && percentAbove(memory.swapTotal - memory.swapFree, memory.swapTotal, SWAP_USED_LIMIT);
+            && percentAbove(memory.swapTotal - memory.swapFree, memory.swapTotal, SWAP_USED_LIMIT);
 }
 
-static QString unescapeUnit(QString text) {
+static QString unescapeUnit(QString text)
+{
     for (int i = 0; i + 3 < text.size(); ++i) {
-        if (text[i] != '\\' || text[i + 1] != 'x') continue;
+        if (text[i] != '\\' || text[i + 1] != 'x')
+            continue;
         bool ok;
         const ushort value = text.mid(i + 2, 2).toUShort(&ok, 16);
-        if (ok) text.replace(i, 4, QChar(value));
+        if (ok)
+            text.replace(i, 4, QChar(value));
     }
     return text;
 }
 
-static std::optional<QString> appIdFromUnit(const QString &unit) {
+static std::optional<QString> appIdFromUnit(const QString &unit)
+{
     QString appId;
     if (unit.startsWith("app-DDE-")) {
+        // DDE 启动组：app-DDE-<id>@<rand>.service
         appId = unit.mid(8).section('@', 0, 0);
     } else if (unit.startsWith("app-") && unit.endsWith(".scope")) {
+        // 应用自建 scope：app-<id>-<pid>.scope
         appId = unit.mid(4, unit.size() - 10);
         const int separator = appId.lastIndexOf('-');
         bool pidOk = false;
         appId.mid(separator + 1).toUInt(&pidOk);
-        if (separator <= 0 || !pidOk) return std::nullopt;
+        if (separator <= 0 || !pidOk)
+            return std::nullopt;
         appId.truncate(separator);
+    } else if (unit.startsWith("app-") && unit.endsWith(".service")) {
+        // systemd transient 应用单元（KDE Plasma 等通过 systemd-run/XDG
+        // activation 启动）：app-<id>@<rand>.service。DDE 启动组已被上面
+        // 的 app-DDE- 分支拦截，所以这里只会匹配非 DDE 的会话。
+        // 要求 '@<rand>' 后缀，避免误把 'app-<id>.service' 这种普通
+        // 系统服务当作应用单元。
+        const int at = unit.indexOf('@');
+        if (at < 0)
+            return std::nullopt;
+        appId = unit.mid(4, at - 4);
     } else {
         return std::nullopt;
     }
     appId = unescapeUnit(appId);
-    if (appId.endsWith(".autostart")) appId.chop(10);
+    if (appId.endsWith(".autostart"))
+        appId.chop(10);
     return appId;
 }
 
-static QStringList desktopInfo(const QString &appId) {
+static QStringList desktopInfo(const QString &appId)
+{
     static QHash<QString, QStringList> cache;
-    if (cache.contains(appId)) return cache.value(appId);
+    if (cache.contains(appId))
+        return cache.value(appId);
 
-    QString file = QStandardPaths::locate(QStandardPaths::ApplicationsLocation,
-                                           appId + ".desktop");
+    QString file = QStandardPaths::locate(QStandardPaths::ApplicationsLocation, appId + ".desktop");
     if (file.isEmpty()) {
-        const QString linglong = "/var/lib/linglong/entries/apps/share/applications/" + appId + ".desktop";
-        if (QFile::exists(linglong)) file = linglong;
+        const QString linglong =
+                "/var/lib/linglong/entries/apps/share/applications/" + appId + ".desktop";
+        if (QFile::exists(linglong))
+            file = linglong;
     }
-    if (file.isEmpty()) return cache.insert(appId, {}).value();
+    if (file.isEmpty())
+        return cache.insert(appId, {}).value();
     QSettings desktop(file, QSettings::IniFormat);
     desktop.beginGroup("Desktop Entry");
     const QString locale = QLocale::system().name();
     QString name = desktop.value("Name[" + locale + "]").toString();
-    if (name.isEmpty()) name = desktop.value("Name[" + locale.section('_', 0, 0) + "]").toString();
-    if (name.isEmpty()) name = desktop.value("Name").toString();
-    return cache.insert(appId, {name, desktop.value("Icon").toString()}).value();
+    if (name.isEmpty())
+        name = desktop.value("Name[" + locale.section('_', 0, 0) + "]").toString();
+    if (name.isEmpty())
+        name = desktop.value("Name").toString();
+    return cache.insert(appId, { name, desktop.value("Icon").toString() }).value();
 }
 
-static QString ownCgroupPath() {
+// Whitelist entries are desktop file IDs (the same ID parsed from the cgroup
+// unit name), one per line; blank lines and '#' comments are ignored.
+static QSet<QString> parseWhitelist(const QByteArray &data)
+{
+    QSet<QString> out;
+    for (const auto &raw : data.split('\n')) {
+        const auto line = raw.trimmed();
+        if (line.isEmpty() || line.startsWith('#'))
+            continue;
+        out.insert(QString::fromUtf8(line));
+    }
+    return out;
+}
+
+// vim-style levels, merged as one set: package defaults under
+// /usr/share/deepin-liferaft, administrator entries under
+// /etc/deepin-liferaft, and per-user entries under ~/.config.
+static QStringList whitelistPaths()
+{
+    QStringList paths;
+    for (const auto &dir : QStandardPaths::standardLocations(QStandardPaths::AppDataLocation))
+        paths << dir + "/whitelist";
+    paths << "/etc/deepin-liferaft/whitelist";
+    const QString userConfig = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (!userConfig.isEmpty())
+        paths << userConfig + "/whitelist";
+    return paths;
+}
+
+static QSet<QString> loadWhitelist(const QStringList &paths)
+{
+    QSet<QString> out;
+    for (const auto &path : paths) {
+        QFile file(path);
+        if (file.open(QIODevice::ReadOnly))
+            out.unite(parseWhitelist(file.readAll()));
+    }
+    return out;
+}
+
+static QString ownCgroupPath()
+{
     QFile f("/proc/self/cgroup");
-    if (!f.open(QIODevice::ReadOnly)) return {};
+    if (!f.open(QIODevice::ReadOnly))
+        return {};
     for (const auto &line : f.readAll().split('\n'))
-        if (line.startsWith("0::")) return "/sys/fs/cgroup" + QString::fromUtf8(line.mid(3)).trimmed();
+        if (line.startsWith("0::"))
+            return "/sys/fs/cgroup" + QString::fromUtf8(line.mid(3)).trimmed();
     return {};
 }
 
-static bool writeCgroup(const QString &path, const char *file, const char *value) {
+static bool writeCgroup(const QString &path, const char *file, const char *value)
+{
     QFile control(path + "/" + file);
     return control.open(QIODevice::WriteOnly) && control.write(value) > 0;
 }
 
-static bool freezeOwned(const QString &cgroup, QSet<QString> &owned) {
+static bool freezeOwned(const QString &cgroup, QSet<QString> &owned)
+{
     const auto state = fileValue(cgroup + "/cgroup.freeze");
-    if (!state || *state != 0 || !writeCgroup(cgroup, "cgroup.freeze", "1")) return false;
+    if (!state || *state != 0 || !writeCgroup(cgroup, "cgroup.freeze", "1"))
+        return false;
     owned.insert(cgroup);
     return true;
 }
 
-static bool thawCgroup(const QString &cgroup) {
-    if (!QFile::exists(cgroup)) return true;
+static bool thawCgroup(const QString &cgroup)
+{
+    if (!QFile::exists(cgroup))
+        return true;
     const auto state = fileValue(cgroup + "/cgroup.freeze");
     return state && (*state == 0 || writeCgroup(cgroup, "cgroup.freeze", "0"));
 }
 
-static bool thawOwned(QSet<QString> &owned) {
+static bool thawOwned(QSet<QString> &owned)
+{
     QSet<QString> failed;
     for (const auto &cgroup : owned)
-        if (!thawCgroup(cgroup)) failed.insert(cgroup);
+        if (!thawCgroup(cgroup))
+            failed.insert(cgroup);
     owned = failed;
     return owned.isEmpty();
 }
 
-static int createSignalFd() {
+static int createSignalFd()
+{
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGTERM);
     sigaddset(&mask, SIGINT);
-    if (sigprocmask(SIG_BLOCK, &mask, nullptr) < 0) return -1;
+    if (sigprocmask(SIG_BLOCK, &mask, nullptr) < 0)
+        return -1;
     const int fd = signalfd(-1, &mask, SFD_CLOEXEC | SFD_NONBLOCK);
-    if (fd < 0) sigprocmask(SIG_UNBLOCK, &mask, nullptr);
+    if (fd < 0)
+        sigprocmask(SIG_UNBLOCK, &mask, nullptr);
     return fd;
 }
 
-// DDE 启动组和应用自建 scope 都是独立的应用资源边界。
-static std::optional<QList<Proc>> appProcs(bool requireSwap = false, bool requirePgscan = false) {
+// DDE 启动组、systemd transient 应用单元（KDE Plasma 等）和应用自建 scope
+// 都是独立的应用资源边界。
+static std::optional<QList<Proc>>
+appProcs(const QString &root, bool requireSwap, bool requirePgscan, const QSet<QString> &whitelist)
+{
     QList<Proc> out;
-    const QString root = userCgroupPath() + "/app.slice";
     const QDir appRoot(root);
-    if (!appRoot.exists()) return std::nullopt;
-    for (const auto &unit : appRoot.entryList({"app-DDE-*", "app-*.scope"},
-                                              QDir::Dirs | QDir::NoDotAndDotDot)) {
+    if (!appRoot.exists())
+        return std::nullopt;
+    for (const auto &unit :
+         appRoot.entryList({ "app-DDE-*", "app-*.scope", "app-*.service" },
+                            QDir::Dirs | QDir::NoDotAndDotDot)) {
         const auto appId = appIdFromUnit(unit);
-        if (!appId) continue;
+        if (!appId || whitelist.contains(*appId))
+            continue;
         const QString cgroup = root + "/" + unit;
         const auto memory = fileValue(cgroup + "/memory.current");
         const auto swap = fileValue(cgroup + "/memory.swap.current");
         const auto pgscan = memoryStatValue(cgroup, "pgscan");
-        if (!memory || (requireSwap && !swap) || (requirePgscan && !pgscan)) return std::nullopt;
-        if (!*memory) continue;
+        if (!memory || (requireSwap && !swap) || (requirePgscan && !pgscan))
+            return std::nullopt;
+        if (!*memory)
+            continue;
 
         const auto desktop = desktopInfo(*appId);
         QString name = desktop.value(0);
-        if (name.isEmpty()) name = *appId;
-        out << Proc{cgroup,
-                    *memory,
-                    swap.value_or(0),
-                    pgscan,
-                    0,
-                    name,
-                    desktop.value(1, *appId)};
+        if (name.isEmpty())
+            name = *appId;
+        out << Proc{ cgroup, *memory, swap.value_or(0), pgscan, 0, name, desktop.value(1, *appId) };
     }
     return out;
 }
 
 static quint64 pgscanDelta(const std::optional<quint64> &previous,
-                           const std::optional<quint64> &current) {
+                           const std::optional<quint64> &current)
+{
     return previous && current && *current >= *previous ? *current - *previous : 0;
 }
 
-static bool hasSwapCandidate(const QList<Proc> &apps, quint64 swapTotal) {
-    if (!swapTotal) return false;
+static bool hasSwapCandidate(const QList<Proc> &apps, quint64 swapTotal)
+{
+    if (!swapTotal)
+        return false;
     const quint64 threshold = swapTotal * SWAP_CANDIDATE_LIMIT / 100;
-    return std::any_of(apps.cbegin(), apps.cend(),
-                       [threshold](const Proc &app) { return app.swap > threshold; });
+    return std::any_of(apps.cbegin(), apps.cend(), [threshold](const Proc &app) {
+        return app.swap > threshold;
+    });
 }
 
-static Trigger selectTrigger(double pressure, qint64 pressureDuration, bool recentReclaim,
-                             const SystemMemory &memory, const QList<Proc> &apps) {
-    if (systemSwapPressure(memory) && hasSwapCandidate(apps, memory.swapTotal)) return Trigger::Swap;
+static Trigger selectTrigger(double pressure,
+                             qint64 pressureDuration,
+                             bool recentReclaim,
+                             const SystemMemory &memory,
+                             const QList<Proc> &apps)
+{
+    if (systemSwapPressure(memory) && hasSwapCandidate(apps, memory.swapTotal))
+        return Trigger::Swap;
     if (pressure > PRESSURE_LIMIT && pressureDuration >= PRESSURE_DURATION_MS && recentReclaim)
         return Trigger::Pressure;
     return Trigger::None;
 }
 
-static QString fmtSize(quint64 bytes) {
-    if (bytes >= (1ull << 30)) return QString::number(bytes / 1073741824.0, 'f', 1) + " GB";
+static QString fmtSize(quint64 bytes)
+{
+    if (bytes >= (1ull << 30))
+        return QString::number(bytes / 1073741824.0, 'f', 1) + " GB";
     return QString::number(bytes / 1048576.0, 'f', 1) + " MB";
 }
 
-static QString triggerName(Trigger trigger) {
+// What the machine has and what is left of it. An invalid sample prints no
+// numbers at all: a zero here would read like a real measurement.
+static QString memoryLine(const SystemMemory &memory)
+{
+    if (!memory.valid)
+        return L("System memory information unavailable");
+    return L("Available memory %1 · Total memory %2")
+            .arg(fmtSize(memory.memAvailable), fmtSize(memory.memTotal));
+}
+
+// Swap counts as well, because the pressure policy looks at it. Board without
+// swap says so instead of showing two zeroes.
+static QString swapLine(const SystemMemory &memory)
+{
+    if (!memory.valid)
+        return QString();
+    if (memory.swapTotal == 0)
+        return L("Swap not configured");
+    return L("Available swap %1 · Total swap %2")
+            .arg(fmtSize(memory.swapFree), fmtSize(memory.swapTotal));
+}
+
+static QString triggerName(Trigger trigger)
+{
     switch (trigger) {
-    case Trigger::Swap: return QStringLiteral("swap");
-    case Trigger::Pressure: return QStringLiteral("pressure");
-    case Trigger::None: return QStringLiteral("none");
+    case Trigger::Swap:
+        return QStringLiteral("swap");
+    case Trigger::Pressure:
+        return QStringLiteral("pressure");
+    case Trigger::None:
+        return QStringLiteral("none");
     }
     return QStringLiteral("unknown");
 }
 
-static bool freezerSelfTest() {
+// Theme-aware color helpers replacing the DTK palette roles.
+static QColor warningColor(const QPalette &pal)
+{
+    // A medium red visible on both light and dark themes.
+    return pal.color(QPalette::Active, QPalette::BrightText).lightness() < 128
+            ? QColor(0xef, 0x53, 0x50)
+            : QColor(0xc6, 0x28, 0x28);
+}
+
+static QColor obviousBackground(const QPalette &pal)
+{
+    QColor base = pal.color(QPalette::Base);
+    // Slightly elevated background: lighter for dark, slightly darker for light.
+    return base.lightness() < 128 ? base.lighter(125) : base.darker(105);
+}
+
+static QColor adjustLightness(const QColor &color, int delta)
+{
+    int h, s, l, a;
+    color.getHsl(&h, &s, &l, &a);
+    l = std::clamp(l + delta, 0, 255);
+    QColor result;
+    result.setHsl(h, s, l, a);
+    return result;
+}
+
+static QFont sizedFont(const QFont &base, int pointSize, QFont::Weight weight = QFont::Normal)
+{
+    QFont font(base);
+    font.setPointSize(pointSize);
+    font.setWeight(weight);
+    return font;
+}
+
+static bool freezerSelfTest()
+{
     QTemporaryDir dir;
     const QString app = dir.path() + "/app";
     const QString missing = dir.path() + "/missing";
-    if (!dir.isValid() || !QDir().mkpath(app) || !QDir().mkpath(missing)) return false;
+    if (!dir.isValid() || !QDir().mkpath(app) || !QDir().mkpath(missing))
+        return false;
     QFile state(app + "/cgroup.freeze");
-    if (!state.open(QIODevice::WriteOnly) || state.write("0") != 1) return false;
+    if (!state.open(QIODevice::WriteOnly) || state.write("0") != 1)
+        return false;
     state.close();
 
     QSet<QString> owned;
-    if (!freezeOwned(app, owned) || fileValue(app + "/cgroup.freeze") != 1) return false;
-    if (!thawOwned(owned) || fileValue(app + "/cgroup.freeze") != 0) return false;
+    if (!freezeOwned(app, owned) || fileValue(app + "/cgroup.freeze") != 1)
+        return false;
+    if (!thawOwned(owned) || fileValue(app + "/cgroup.freeze") != 0)
+        return false;
 
-    if (!state.open(QIODevice::WriteOnly) || state.write("1") != 1) return false;
+    if (!state.open(QIODevice::WriteOnly) || state.write("1") != 1)
+        return false;
     state.close();
-    if (freezeOwned(app, owned) || !owned.isEmpty()) return false;
+    if (freezeOwned(app, owned) || !owned.isEmpty())
+        return false;
 
     owned.insert(missing);
     return !thawOwned(owned) && owned.contains(missing);
 }
 
-static bool selfTest() {
-    const SystemMemory highSwap{100, 9, 100, 9, true};
-    const SystemMemory atLimit{100, 10, 100, 10, true};
-    const QList<Proc> swapCandidate{{{}, 1, 6, 0, 0, {}, {}}};
-    const QList<Proc> exactSwapLimit{{{}, 1, 5, 0, 0, {}, {}}};
+static bool whitelistSelfTest()
+{
+    QTemporaryDir dir;
+    if (!dir.isValid())
+        return false;
+    const QString root = dir.path() + "/app.slice";
+    const QString allowed = root + "/app-DDE-allowed@1000.service";
+    const QString blocked = root + "/app-DDE-blocked@1001.service";
+    if (!QDir().mkpath(allowed) || !QDir().mkpath(blocked))
+        return false;
+    for (const auto &cgroup : { allowed, blocked }) {
+        QFile current(cgroup + "/memory.current");
+        if (!current.open(QIODevice::WriteOnly) || current.write("1024") <= 0)
+            return false;
+    }
+
+    const auto all = appProcs(root, false, false, {});
+    if (!all || all->size() != 2)
+        return false;
+    const auto filtered = appProcs(root, false, false, { "blocked" });
+    if (!filtered || filtered->size() != 1 || filtered->first().name != "allowed")
+        return false;
+
+    const auto parsed = parseWhitelist("# comment\n\nfoo-bar\n  baz \t\n");
+    if (parsed != QSet<QString>({ "foo-bar", "baz" }))
+        return false;
+
+    QFile systemFile(dir.path() + "/system.list");
+    if (!systemFile.open(QIODevice::WriteOnly) || systemFile.write("alpha\n# note\n") <= 0)
+        return false;
+    systemFile.close();
+    QFile userFile(dir.path() + "/user.list");
+    if (!userFile.open(QIODevice::WriteOnly) || userFile.write("beta\nalpha\n") <= 0)
+        return false;
+    userFile.close();
+    const auto merged =
+            loadWhitelist({ systemFile.fileName(), dir.path() + "/missing", userFile.fileName() });
+    return merged == QSet<QString>({ "alpha", "beta" });
+}
+
+// Closing the dialog thaws every cgroup this process froze, so an accidental
+// close hands the paused applications straight back to the memory pressure that
+// paused them. Ask for confirmation while such cgroups are still owned.
+static bool needsCloseConfirmation(int frozenCount, bool confirmed)
+{
+    return frozenCount > 0 && !confirmed;
+}
+
+static bool selfTest()
+{
+    const SystemMemory highSwap{ 100, 9, 100, 9, true };
+    const SystemMemory atLimit{ 100, 10, 100, 10, true };
+    const SystemMemory boardWithSwap{ 34359738368ull,
+                                      4294967296ull,
+                                      8589934592ull,
+                                      1073741824ull,
+                                      true };
+    const SystemMemory boardWithoutSwap{ 34359738368ull, 4294967296ull, 0, 0, true };
+    const QList<Proc> swapCandidate{ { {}, 1, 6, 0, 0, {}, {} } };
+    const QList<Proc> exactSwapLimit{ { {}, 1, 5, 0, 0, {}, {} } };
     return unescapeUnit("google\\x2dchrome") == "google-chrome"
-        && appIdFromUnit("app-DDE-google\\x2dchrome@123.service") == "google-chrome"
-        && appIdFromUnit("app-code-113545.scope") == "code"
-        && !appIdFromUnit("app-code.scope")
-        && parseFullAvg10("some avg10=99.00 avg60=1.00\nfull avg10=50.25 avg60=2.00\n") == 50.25
-        && selectTrigger(50.0, 20000, true, {}, {}) == Trigger::None
-        && selectTrigger(50.1, 19999, true, {}, {}) == Trigger::None
-        && selectTrigger(50.1, 20000, false, {}, {}) == Trigger::None
-        && selectTrigger(50.1, 20000, true, {}, {}) == Trigger::Pressure
-        && selectTrigger(0, 0, false, highSwap, swapCandidate) == Trigger::Swap
-        && selectTrigger(0, 0, false, atLimit, swapCandidate) == Trigger::None
-        && selectTrigger(0, 0, false, highSwap, exactSwapLimit) == Trigger::None
-        && selectTrigger(0, 0, false, highSwap, {}) == Trigger::None
-        && pgscanDelta(100, 101) == 1
-        && pgscanDelta(100, std::nullopt) == 0
-        && pgscanDelta(std::nullopt, 101) == 0
-        && freezerSelfTest()
-        && fmtSize(56727962) == "54.1 MB"
-        && fmtSize(1610612736) == "1.5 GB";
+            && appIdFromUnit("app-DDE-google\\x2dchrome@123.service") == "google-chrome"
+            && appIdFromUnit("app-code-113545.scope") == "code" && !appIdFromUnit("app-code.scope")
+            // KDE Plasma transient units: app-<id>@<rand>.service. Must
+            // not be confused with the DDE launch-group prefix.
+            && appIdFromUnit("app-plasmashell@b3c1-abc.service") == "plasmashell"
+            && appIdFromUnit("app-org.kde.kded6@xyz.service") == "org.kde.kded6"
+            && appIdFromUnit("app-kscreenlocker_greet@1.service") == "kscreenlocker_greet"
+            && !appIdFromUnit("app-plasmashell.service") // missing @rand
+            && parseFullAvg10("some avg10=99.00 avg60=1.00\nfull avg10=50.25 avg60=2.00\n") == 50.25
+            && selectTrigger(50.0, 20000, true, {}, {}) == Trigger::None
+            && selectTrigger(50.1, 19999, true, {}, {}) == Trigger::None
+            && selectTrigger(50.1, 20000, false, {}, {}) == Trigger::None
+            && selectTrigger(50.1, 20000, true, {}, {}) == Trigger::Pressure
+            && selectTrigger(0, 0, false, highSwap, swapCandidate) == Trigger::Swap
+            && selectTrigger(0, 0, false, atLimit, swapCandidate) == Trigger::None
+            && selectTrigger(0, 0, false, highSwap, exactSwapLimit) == Trigger::None
+            && selectTrigger(0, 0, false, highSwap, {}) == Trigger::None
+            && pgscanDelta(100, 101) == 1 && pgscanDelta(100, std::nullopt) == 0
+            && pgscanDelta(std::nullopt, 101) == 0 && freezerSelfTest() && whitelistSelfTest()
+            && !needsCloseConfirmation(0, false) && !needsCloseConfirmation(0, true)
+            && needsCloseConfirmation(1, false) && needsCloseConfirmation(3, false)
+            && !needsCloseConfirmation(1, true) && fmtSize(56727962) == "54.1 MB"
+            && fmtSize(1610612736) == "1.5 GB"
+            && fmtSize(boardWithSwap.memAvailable) == "4.0 GB"
+            && fmtSize(boardWithSwap.memTotal) == "32.0 GB"
+            && fmtSize(boardWithSwap.swapTotal) == "8.0 GB"
+            && fmtSize(boardWithSwap.swapFree) == "1.0 GB"
+            && boardWithoutSwap.swapTotal == 0;
 }
 
 static const int APP_NAME_ROLE = Qt::UserRole + 1;
 static const int PAUSED_ROLE = Qt::UserRole + 2;
+static const int MEMORY_ROLE = Qt::UserRole + 3;
+static const int CGROUP_ROLE = Qt::UserRole + 4;
 
-class AppNameDelegate : public QStyledItemDelegate {
+static const int APP_ROW_HEIGHT = 44;
+static const int LIST_CONTENT_MARGIN = 12;
+static const int MAX_LIST_ROWS = 10;
+static const int FRAME_RADIUS = 8;
+
+// Font point sizes approximating DFontSizeManager tiers.
+static const int FONT_TITLE = 14;  // T5
+static const int FONT_NAME = 12;   // T7
+static const int FONT_BODY = 11;   // T8
+static const int FONT_SMALL = 10;  // T9
+
+// Warning badge used by the alert banner: the themed warning icon on a soft
+// tint of the warning color, following DDE's alert styling.
+class AlertBadge : public QWidget
+{
 public:
-    using QStyledItemDelegate::QStyledItemDelegate;
+    explicit AlertBadge(QWidget *parent = nullptr)
+        : QWidget(parent)
+    {
+        setFixedSize(36, 36);
+        m_icon = QIcon::fromTheme(QStringLiteral("dialog-warning"),
+                                  style()->standardIcon(QStyle::SP_MessageBoxWarning));
+    }
 
-    void paint(QPainter *painter, const QStyleOptionViewItem &option,
-               const QModelIndex &index) const override {
-        QStyleOptionViewItem base(option);
-        initStyleOption(&base, index);
-        const QIcon icon = base.icon;
-        base.icon = {};
-        base.text.clear();
-        QStyle *style = base.widget ? base.widget->style() : QApplication::style();
-        style->drawControl(QStyle::CE_ItemViewItem, &base, painter, base.widget);
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QColor tint = warningColor(palette());
+        tint.setAlphaF(0.16);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(tint);
+        painter.drawRoundedRect(rect(), 10, 10);
+
+        QRect iconRect(QPoint(), QSize(22, 22));
+        iconRect.moveCenter(rect().center());
+        m_icon.paint(&painter, iconRect);
+    }
+
+private:
+    QIcon m_icon;
+};
+
+// Alert header card: a rounded background holding the warning badge and two
+// lines of text, in the banner style used across DDE.
+class AlertBanner : public QFrame
+{
+public:
+    AlertBanner(const QString &title, const QString &message, QWidget *parent = nullptr)
+        : QFrame(parent)
+    {
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        auto *layout = new QHBoxLayout(this);
+        layout->setContentsMargins(14, 14, 14, 14);
+        layout->setSpacing(14);
+        layout->addWidget(new AlertBadge(this), 0, Qt::AlignTop);
+
+        auto *textLayout = new QVBoxLayout;
+        textLayout->setContentsMargins(0, 0, 0, 0);
+        textLayout->setSpacing(3);
+
+        auto *titleLabel = new QLabel(title, this);
+        titleLabel->setWordWrap(true);
+        titleLabel->setFont(sizedFont(font(), FONT_TITLE, QFont::DemiBold));
+
+        auto *messageLabel = new QLabel(message, this);
+        messageLabel->setWordWrap(true);
+        QPalette msgPal = messageLabel->palette();
+        msgPal.setColor(QPalette::WindowText, messageLabel->palette().color(QPalette::Disabled, QPalette::WindowText));
+        messageLabel->setPalette(msgPal);
+        messageLabel->setFont(sizedFont(font(), FONT_BODY));
+
+        textLayout->addWidget(titleLabel);
+        textLayout->addWidget(messageLabel);
+        textLayout->addSpacing(4);
+
+        m_memoryLabel = new QLabel(this);
+        m_swapLabel = new QLabel(this);
+        for (auto *label : { m_memoryLabel, m_swapLabel }) {
+            label->setWordWrap(true);
+            label->setFont(sizedFont(font(), FONT_SMALL));
+            textLayout->addWidget(label);
+        }
+        layout->addLayout(textLayout, 1);
+    }
+
+    // Machine memory and swap under the alert, refreshed with every poll. An
+    // empty swap line hides that row.
+    void setMemoryStatus(const QString &memory, const QString &swap)
+    {
+        if (m_memoryLabel->text() != memory)
+            m_memoryLabel->setText(memory);
+        m_swapLabel->setVisible(!swap.isEmpty());
+        if (m_swapLabel->text() != swap)
+            m_swapLabel->setText(swap);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(obviousBackground(palette()));
+        painter.drawRoundedRect(rect(), FRAME_RADIUS, FRAME_RADIUS);
+    }
+
+private:
+    QLabel *m_memoryLabel = nullptr;
+    QLabel *m_swapLabel = nullptr;
+};
+
+// A simple horizontal separator line replacing DHorizontalLine.
+class HorizontalLine : public QFrame
+{
+public:
+    explicit HorizontalLine(QWidget *parent = nullptr) : QFrame(parent)
+    {
+        setFrameShape(QFrame::HLine);
+        setFrameShadow(QFrame::Sunken);
+        setFixedHeight(2);
+    }
+};
+
+// Draws one application row — icon, name, paused tag and right-aligned memory
+// usage — on an alternating row background. The striping follows
+// deepin-system-monitor's BaseTableView::drawRow(): even rows use
+// QPalette::AlternateBase, odd rows QPalette::Base, the selected row uses the
+// accent color and hovering darkens the base color.
+class AppRowDelegate : public QStyledItemDelegate
+{
+public:
+    explicit AppRowDelegate(QListView *view)
+        : QStyledItemDelegate(view)
+    {
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        Q_UNUSED(index)
+        Q_UNUSED(option)
+        return QSize(0, APP_ROW_HEIGHT);
+    }
+
+    void paint(QPainter *painter,
+               const QStyleOptionViewItem &option,
+               const QModelIndex &index) const override
+    {
+        QStyleOptionViewItem opt(option);
+        initStyleOption(&opt, index);
+
+        const QPalette palette = opt.widget ? opt.widget->palette() : QApplication::palette();
+        QPalette::ColorGroup group =
+                opt.state.testFlag(QStyle::State_Enabled) ? QPalette::Normal : QPalette::Disabled;
+        if (group == QPalette::Normal && !opt.state.testFlag(QStyle::State_Active))
+            group = QPalette::Inactive;
+
+        const QColor baseColor = palette.color(QPalette::Base);
+        const bool selected = opt.state.testFlag(QStyle::State_Selected);
+        const bool hovered = opt.state.testFlag(QStyle::State_MouseOver);
+        QColor background = (index.row() % 2) ? baseColor : palette.color(QPalette::AlternateBase);
+        if (selected)
+            background = hovered ? adjustLightness(palette.color(QPalette::Highlight), 20)
+                                 : palette.color(QPalette::Highlight);
+        else if (hovered)
+            background = adjustLightness(baseColor, -10);
+
+        const QColor textColor =
+                opt.palette.color(group, selected ? QPalette::HighlightedText : QPalette::Text);
+        const QColor tipsColorVal = selected ? textColor : palette.color(QPalette::Disabled, QPalette::WindowText);
+        const QColor warningColorVal = selected ? textColor : warningColor(palette);
+
+        const QRect content = opt.rect.adjusted(LIST_CONTENT_MARGIN, 0, -LIST_CONTENT_MARGIN, 0);
 
         painter->save();
-        painter->setClipRect(option.rect);
-        const QRect iconRect(option.rect.left() + 4, option.rect.center().y() - 12, 24, 24);
-        icon.paint(painter, iconRect);
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(background);
+        painter->drawRoundedRect(opt.rect, FRAME_RADIUS, FRAME_RADIUS);
 
-        const bool paused = index.data(PAUSED_ROLE).toBool();
-        const bool selected = option.state.testFlag(QStyle::State_Selected);
-        const QColor normal = option.palette.color(selected ? QPalette::HighlightedText : QPalette::Text);
-        const QFontMetrics metrics(option.font);
-        const QString suffix = paused ? QStringLiteral("(Paused)") : QString();
-        const int suffixWidth = metrics.horizontalAdvance(suffix);
-        const int textX = iconRect.right() + 7;
-        const int available = std::max(0, option.rect.right() - textX - suffixWidth - 4);
-        const QString name = metrics.elidedText(index.data(APP_NAME_ROLE).toString(),
-                                                 Qt::ElideRight, available);
-        const int baseline = option.rect.center().y() + (metrics.ascent() - metrics.descent()) / 2;
+        const int iconSize = 24;
+        const QRect iconRect(content.left(),
+                             content.center().y() - iconSize / 2,
+                             iconSize,
+                             iconSize);
+        index.data(Qt::DecorationRole)
+                .value<QIcon>()
+                .paint(painter,
+                       iconRect,
+                       Qt::AlignCenter,
+                       selected ? QIcon::Selected : QIcon::Normal);
 
-        painter->setPen(paused ? QColor(205, 45, 45) : normal);
-        painter->drawText(textX, baseline, name);
-        if (paused) {
-            painter->setPen(normal);
-            painter->drawText(textX + metrics.horizontalAdvance(name), baseline, suffix);
+        const QString memory = index.data(MEMORY_ROLE).toString();
+        const QFont memoryFont = sizedFont(opt.font, FONT_BODY);
+        const QFontMetricsF memoryMetrics(memoryFont);
+        const int memoryWidth = int(memoryMetrics.horizontalAdvance(memory)) + 4;
+        const QRect memoryRect(content.right() - memoryWidth,
+                               content.top(),
+                               memoryWidth,
+                               content.height());
+
+        int nameRight = memoryRect.left() - 10;
+        const QString tagText = index.data(PAUSED_ROLE).toBool()
+                ? L("Paused")
+                : QString();
+        if (!tagText.isEmpty()) {
+            const QFont tagFont = sizedFont(opt.font, FONT_SMALL);
+            const QFontMetricsF tagMetrics(tagFont);
+            const int tagWidth = int(tagMetrics.horizontalAdvance(tagText)) + 14;
+            const int tagHeight = 18;
+            const QRect tagRect(nameRight - tagWidth,
+                                content.center().y() - tagHeight / 2,
+                                tagWidth,
+                                tagHeight);
+            QColor tagBackground = warningColorVal;
+            tagBackground.setAlphaF(selected ? 0.22 : 0.16);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(tagBackground);
+            painter->drawRoundedRect(tagRect, 4, 4);
+            painter->setFont(tagFont);
+            painter->setPen(warningColorVal);
+            painter->drawText(tagRect, Qt::AlignCenter, tagText);
+            nameRight = tagRect.left() - 8;
         }
+
+        QFont nameFont = sizedFont(opt.font, FONT_NAME);
+        nameFont.setWeight(QFont::Medium);
+        const QFontMetricsF nameMetrics(nameFont);
+        const QRect nameRect(iconRect.right() + 10,
+                             content.top(),
+                             std::max(0, nameRight - iconRect.right() - 10),
+                             content.height());
+        painter->setFont(nameFont);
+        painter->setPen(textColor);
+        painter->drawText(nameRect,
+                          Qt::AlignVCenter | Qt::AlignLeft,
+                          nameMetrics.elidedText(index.data(APP_NAME_ROLE).toString(),
+                                                 Qt::ElideRight,
+                                                 nameRect.width()));
+
+        painter->setFont(memoryFont);
+        painter->setPen(tipsColorVal);
+        painter->drawText(memoryRect, Qt::AlignVCenter | Qt::AlignRight, memory);
         painter->restore();
     }
 };
 
-class LiferaftApplication : public QApplication {
+// Answer to a quit request: Allow lets the application exit, Retry repeats the
+// request after a thaw that failed, WaitForUser keeps the application alive
+// while the close confirmation waits for an answer.
+enum class QuitRequest { Allow, Retry, WaitForUser };
+
+class LiferaftApplication : public QApplication
+{
 public:
     using QApplication::QApplication;
 
-    void setQuitGuard(std::function<bool()> guard) {
-        m_quitGuard = std::move(guard);
-    }
+    void setQuitGuard(std::function<QuitRequest()> guard) { m_quitGuard = std::move(guard); }
 
 protected:
-    bool event(QEvent *event) override {
-        if (event->type() == QEvent::Quit && m_quitGuard && !m_quitGuard()) {
-            if (!m_quitRetryScheduled) {
-                m_quitRetryScheduled = true;
-                QTimer::singleShot(250, this, [this] {
-                    m_quitRetryScheduled = false;
-                    QCoreApplication::quit();
-                });
+    bool event(QEvent *event) override
+    {
+        if (event->type() == QEvent::Quit && m_quitGuard) {
+            const QuitRequest answer = m_quitGuard();
+            if (answer != QuitRequest::Allow) {
+                if (answer == QuitRequest::Retry && !m_quitRetryScheduled) {
+                    m_quitRetryScheduled = true;
+                    QTimer::singleShot(250, this, [this] {
+                        m_quitRetryScheduled = false;
+                        QCoreApplication::quit();
+                    });
+                }
+                return true;
             }
-            return true;
         }
         return QApplication::event(event);
     }
 
 private:
-    std::function<bool()> m_quitGuard;
+    std::function<QuitRequest()> m_quitGuard;
     bool m_quitRetryScheduled = false;
 };
 
-class ForceQuitWindow : public QMainWindow {
+class ForceQuitWindow : public QMainWindow
+{
     Q_OBJECT
 public:
-    explicit ForceQuitWindow(int signalFd) {
-        setWindowTitle(L("Force Quit Applications"));
-        setFixedSize(520, 460);
+    explicit ForceQuitWindow(int signalFd, QSet<QString> whitelist)
+        : m_whitelist(std::move(whitelist))
+    {
+        setWindowTitle(QGuiApplication::applicationDisplayName());
+        resize(560, 620);
+        setMinimumSize(520, 480);
 
         if (const auto pgscan = memoryStatValue(userCgroupPath(), "pgscan")) {
             m_lastUserPgscan = *pgscan;
@@ -438,88 +916,117 @@ public:
             auto *notifier = new QSocketNotifier(signalFd, QSocketNotifier::Read, this);
             connect(notifier, &QSocketNotifier::activated, this, [this, signalFd] {
                 signalfd_siginfo info;
-                while (::read(signalFd, &info, sizeof(info)) == sizeof(info)) {}
+                while (::read(signalFd, &info, sizeof(info)) == sizeof(info)) { }
                 requestShutdown();
             });
         }
 
         m_timer = new QTimer(this);
-        connect(m_timer, &QTimer::timeout, this, [this] { poll(); });
+        connect(m_timer, &QTimer::timeout, this, [this] {
+            poll();
+        });
         m_timer->start(POLL_MS);
     }
 
-    void ensureUi() {
-        if (m_table) return;
+    void ensureUi()
+    {
+        if (m_view)
+            return;
 
-        const QIcon icon = QIcon::fromTheme("deepin-liferaft");
+        const QIcon icon = QIcon::fromTheme(QStringLiteral("deepin-liferaft"));
         setWindowIcon(icon);
+
         auto *central = new QWidget;
         auto *vbox = new QVBoxLayout(central);
-        vbox->setContentsMargins(24, 20, 24, 20);
-        vbox->setSpacing(10);
+        vbox->setContentsMargins(16, 8, 16, 12);
+        vbox->setSpacing(12);
 
-        auto *heading = new QHBoxLayout;
-        auto *warning = new QLabel;
-        warning->setFixedSize(54, 54);
-        warning->setAlignment(Qt::AlignCenter);
-        warning->setPixmap(style()->standardIcon(QStyle::SP_MessageBoxWarning).pixmap(48, 48));
-        heading->addWidget(warning, 0, Qt::AlignTop);
+        m_banner = new AlertBanner(
+                L("Low memory"),
+                L("The following apps have been paused to keep your system responsive. "
+                  "Resume them, or force quit to free up memory."),
+                central);
+        vbox->addWidget(m_banner);
 
-        auto *headingText = new QVBoxLayout;
-        auto *title = new QLabel(L("Your system has run out of application memory."));
-        QFont font = title->font();
-        font.setPointSize(15);
-        font.setBold(true);
-        title->setFont(font);
-        title->setWordWrap(true);
-        auto *sub = new QLabel(L("To avoid problems with your computer, quit applications you are no longer using."));
-        sub->setWordWrap(true);
-        QPalette palette = sub->palette();
-        palette.setColor(QPalette::WindowText, QColor(80, 80, 85));
-        sub->setPalette(palette);
-        headingText->addWidget(title);
-        headingText->addWidget(sub);
-        heading->addLayout(headingText, 1);
-        vbox->addLayout(heading);
-        vbox->addSpacing(6);
+        m_view = new QListView(central);
+        m_view->setFrameShape(QFrame::NoFrame);
+        m_view->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        m_view->setUniformItemSizes(true);
+        m_view->viewport()->setAttribute(Qt::WA_Hover, true);
+        m_view->setItemDelegate(new AppRowDelegate(m_view));
+        m_model = new QStandardItemModel(m_view);
+        m_view->setModel(m_model);
 
-        m_table = new QTableWidget(0, 2);
-        m_table->horizontalHeader()->hide();
-        m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-        m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-        m_table->verticalHeader()->hide();
-        m_table->verticalHeader()->setDefaultSectionSize(30);
-        m_table->setItemDelegateForColumn(0, new AppNameDelegate(m_table));
-        m_table->setShowGrid(false);
-        m_table->setFrameShape(QFrame::StyledPanel);
-        m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-        m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-        m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        m_table->setFocusPolicy(Qt::NoFocus);
-        QPalette tablePal = m_table->palette();
-        tablePal.setColor(QPalette::Inactive, QPalette::Highlight,
-                          tablePal.color(QPalette::Active, QPalette::Highlight));
-        tablePal.setColor(QPalette::Inactive, QPalette::HighlightedText,
-                          tablePal.color(QPalette::Active, QPalette::HighlightedText));
-        m_table->setPalette(tablePal);
-        m_table->setIconSize(QSize(24, 24));
-        vbox->addWidget(m_table);
+        // Column captions, aligned with the content rect of every row.
+        auto *captions = new QWidget(central);
+        auto *captionLayout = new QHBoxLayout(captions);
+        captionLayout->setContentsMargins(LIST_CONTENT_MARGIN, 0, LIST_CONTENT_MARGIN, 0);
+        captionLayout->setSpacing(10);
+        auto *nameCaption = new QLabel(L("Application"), captions);
+        auto *memoryCaption = new QLabel(L("Memory"), captions);
+        for (auto *caption : { nameCaption, memoryCaption }) {
+            QPalette capPal = caption->palette();
+            capPal.setColor(QPalette::WindowText, caption->palette().color(QPalette::Disabled, QPalette::WindowText));
+            caption->setPalette(capPal);
+            caption->setFont(sizedFont(font(), FONT_SMALL));
+        }
+        captionLayout->addWidget(nameCaption);
+        captionLayout->addStretch();
+        captionLayout->addWidget(memoryCaption);
+
+        auto *listPage = new QWidget(central);
+        auto *listLayout = new QVBoxLayout(listPage);
+        listLayout->setContentsMargins(0, 0, 0, 0);
+        listLayout->setSpacing(8);
+        listLayout->addWidget(captions);
+        listLayout->addWidget(new HorizontalLine(listPage));
+        listLayout->addWidget(m_view, 1);
+
+        auto *emptyLabel = new QLabel(L("No applications to show"), central);
+        QPalette emptyPal = emptyLabel->palette();
+        emptyPal.setColor(QPalette::WindowText, emptyLabel->palette().color(QPalette::Disabled, QPalette::WindowText));
+        emptyLabel->setPalette(emptyPal);
+        auto *emptyPage = new QWidget(central);
+        auto *emptyLayout = new QVBoxLayout(emptyPage);
+        emptyLayout->setContentsMargins(0, 0, 0, 0);
+        emptyLayout->addWidget(emptyLabel, 0, Qt::AlignCenter);
+
+        m_listPages = new QStackedLayout;
+        m_listPages->addWidget(listPage);
+        m_listPages->addWidget(emptyPage);
+        auto *listHost = new QWidget(central);
+        listHost->setLayout(m_listPages);
+        vbox->addWidget(listHost, 1);
+
+        vbox->addWidget(new HorizontalLine(central));
 
         auto *buttons = new QHBoxLayout;
-        m_resumeBtn = new QPushButton(L("Resume"));
-        m_killBtn = new QPushButton;
+        buttons->setSpacing(8);
+        m_resumeBtn = new QPushButton(L("Resume"), central);
+        m_resumeBtn->setAccessibleName(L("Resume app"));
+        m_killBtn = new QPushButton(central);
         m_killBtn->setText(L("Force Quit"));
+        m_killBtn->setAccessibleName(L("Force quit app"));
+        // Destructive button styling: red text to indicate a warning action.
+        QPalette killPal = m_killBtn->palette();
+        killPal.setColor(QPalette::ButtonText, warningColor(killPal));
+        m_killBtn->setPalette(killPal);
         buttons->addStretch();
         buttons->addWidget(m_resumeBtn);
         buttons->addWidget(m_killBtn);
         vbox->addLayout(buttons);
         setCentralWidget(central);
 
-        connect(m_table, &QTableWidget::itemSelectionChanged, this, [this] { updateButtons(); });
+        connect(m_view->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this] {
+            updateButtons();
+        });
         connect(m_resumeBtn, &QPushButton::clicked, this, [this] {
-            const int row = m_table->currentRow();
-            if (row < 0) return;
-            const QString cgroup = m_table->item(row, 0)->data(Qt::UserRole).toString();
+            const QString cgroup = currentCgroup();
+            if (cgroup.isEmpty())
+                return;
             if (thawCgroup(cgroup)) {
                 m_frozen.remove(cgroup);
                 qInfo() << L("Resumed %1").arg(cgroup);
@@ -530,9 +1037,9 @@ public:
             refresh();
         });
         connect(m_killBtn, &QPushButton::clicked, this, [this] {
-            const int row = m_table->currentRow();
-            if (row < 0) return;
-            const QString cgroup = m_table->item(row, 0)->data(Qt::UserRole).toString();
+            const QString cgroup = currentCgroup();
+            if (cgroup.isEmpty())
+                return;
             const bool owned = m_frozen.contains(cgroup);
             const bool killed = writeCgroup(cgroup, "cgroup.kill", "1");
             const bool thawed = !owned || thawCgroup(cgroup);
@@ -540,26 +1047,37 @@ public:
                 m_frozen.remove(cgroup);
                 qInfo() << L("Force quit %1: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
             } else {
-                qWarning() << L("Force quit %1 failed: kill=%2 thaw=%3").arg(cgroup).arg(killed).arg(thawed);
+                qWarning() << L("Force quit %1 failed: kill=%2 thaw=%3")
+                                      .arg(cgroup)
+                                      .arg(killed)
+                                      .arg(thawed);
             }
             sampleApps();
             refresh();
         });
     }
 
-    void releaseUi() {
-        if (!m_table) return;
+    void releaseUi()
+    {
+        if (!m_view)
+            return;
         QWidget *central = takeCentralWidget();
-        m_table = nullptr;
+        m_view = nullptr;
+        m_model = nullptr;
+        m_listPages = nullptr;
+        m_banner = nullptr;
         m_resumeBtn = nullptr;
         m_killBtn = nullptr;
         central->deleteLater();
     }
 
-    bool sampleApps(bool requireSwap = false, bool requirePgscan = false) {
-        const auto snapshot = appProcs(requireSwap, requirePgscan);
+    bool sampleApps(bool requireSwap = false, bool requirePgscan = false)
+    {
+        const auto snapshot =
+                appProcs(userCgroupPath() + "/app.slice", requireSwap, requirePgscan, m_whitelist);
         if (!snapshot) {
-            if (requirePgscan) m_lastPgscan.clear();
+            if (requirePgscan)
+                m_lastPgscan.clear();
             return false;
         }
         auto apps = *snapshot;
@@ -567,10 +1085,11 @@ public:
         for (auto &app : apps) {
             const auto previous = m_lastPgscan.constFind(app.cgroup);
             app.reclaim = pgscanDelta(previous == m_lastPgscan.cend()
-                                          ? std::nullopt
-                                          : std::optional<quint64>(previous.value()),
+                                              ? std::nullopt
+                                              : std::optional<quint64>(previous.value()),
                                       app.pgscan);
-            if (app.pgscan) current.insert(app.cgroup, *app.pgscan);
+            if (app.pgscan)
+                current.insert(app.cgroup, *app.pgscan);
         }
         for (const auto &old : m_apps)
             if (m_frozen.contains(old.cgroup)
@@ -583,10 +1102,12 @@ public:
         return true;
     }
 
-    void poll() {
+    void poll()
+    {
         bool userPgscanValid = false;
         if (const auto pgscan = memoryStatValue(userCgroupPath(), "pgscan")) {
-            if (m_hasLastUserPgscan && *pgscan > m_lastUserPgscan) m_reclaimSeen.start();
+            if (m_hasLastUserPgscan && *pgscan > m_lastUserPgscan)
+                m_reclaimSeen.start();
             m_lastUserPgscan = *pgscan;
             m_hasLastUserPgscan = true;
             userPgscanValid = true;
@@ -606,39 +1127,52 @@ public:
         }
 
         const SystemMemory memory = systemMemory();
+        // The dialog reports what the pressure policy sees, so keep the latest
+        // sample for the alert's memory and swap lines.
+        m_memory = memory;
         const bool pressureSampling = pressure > PRESSURE_LIMIT;
         const bool swapSampling = systemSwapPressure(memory);
         bool appSampleValid = true;
         if (pressureSampling || swapSampling || isVisible())
             appSampleValid = sampleApps(swapSampling, pressureSampling);
 
-        const bool recentReclaim = m_reclaimSeen.isValid()
-            && m_reclaimSeen.elapsed() <= RECLAIM_WINDOW_MS;
+        const bool recentReclaim =
+                m_reclaimSeen.isValid() && m_reclaimSeen.elapsed() <= RECLAIM_WINDOW_MS;
         const qint64 pressureDuration = m_pressureSince.isValid() ? m_pressureSince.elapsed() : -1;
-        const bool samplesValid = pressure >= 0 && memory.valid && userPgscanValid && appSampleValid;
+        const bool samplesValid =
+                pressure >= 0 && memory.valid && userPgscanValid && appSampleValid;
         if (!samplesValid) {
             if (!m_lastSamplesInvalid) {
                 m_lastSamplesInvalid = true;
-                qWarning() << L("Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4")
-                             .arg(pressure >= 0).arg(memory.valid).arg(userPgscanValid).arg(appSampleValid);
+                qWarning()
+                        << L("Invalid samples: pressure=%1 memory=%2 userPgscan=%3 appSample=%4")
+                                   .arg(pressure >= 0)
+                                   .arg(memory.valid)
+                                   .arg(userPgscanValid)
+                                   .arg(appSampleValid);
             }
         } else
             m_lastSamplesInvalid = false;
         const Trigger trigger = samplesValid
-            ? selectTrigger(pressure, pressureDuration, recentReclaim, memory, m_apps)
-            : Trigger::None;
-        const bool coolingDown = m_postAction.isValid() && m_postAction.elapsed() < POST_ACTION_DELAY_MS;
+                ? selectTrigger(pressure, pressureDuration, recentReclaim, memory, m_apps)
+                : Trigger::None;
+        const bool coolingDown =
+                m_postAction.isValid() && m_postAction.elapsed() < POST_ACTION_DELAY_MS;
 
         if (trigger != Trigger::None && !coolingDown && !isVisible()) {
             qInfo() << L("Trigger %1: pressure=%2%% duration=%3ms recentReclaim=%4 "
-                     "memUsed=%5%% swapUsed=%6%% apps=%7")
-                      .arg(triggerName(trigger))
-                      .arg(pressure, 0, 'f', 1)
-                      .arg(pressureDuration)
-                      .arg(recentReclaim)
-                      .arg(memory.memTotal ? (memory.memTotal - memory.memAvailable) * 100 / memory.memTotal : 0)
-                      .arg(memory.swapTotal ? (memory.swapTotal - memory.swapFree) * 100 / memory.swapTotal : 0)
-                      .arg(m_apps.size());
+                          "memUsed=%5%% swapUsed=%6%% apps=%7")
+                               .arg(triggerName(trigger))
+                               .arg(pressure, 0, 'f', 1)
+                               .arg(pressureDuration)
+                               .arg(recentReclaim)
+                               .arg(memory.memTotal ? (memory.memTotal - memory.memAvailable) * 100
+                                                    / memory.memTotal
+                                                    : 0)
+                               .arg(memory.swapTotal ? (memory.swapTotal - memory.swapFree) * 100
+                                                    / memory.swapTotal
+                                                     : 0)
+                               .arg(m_apps.size());
             refresh();
             freezeCandidates(trigger, memory.swapTotal);
             m_postAction.start();
@@ -649,11 +1183,13 @@ public:
             refresh();
     }
 
-    void freezeCandidates(Trigger trigger, quint64 swapTotal) {
+    void freezeCandidates(Trigger trigger, quint64 swapTotal)
+    {
         auto candidates = m_apps;
         if (trigger == Trigger::Swap)
-            std::sort(candidates.begin(), candidates.end(),
-                      [](const Proc &a, const Proc &b) { return a.swap > b.swap; });
+            std::sort(candidates.begin(), candidates.end(), [](const Proc &a, const Proc &b) {
+                return a.swap > b.swap;
+            });
         else
             std::sort(candidates.begin(), candidates.end(), [](const Proc &a, const Proc &b) {
                 return a.reclaim == b.reclaim ? a.memory > b.memory : a.reclaim > b.reclaim;
@@ -661,64 +1197,98 @@ public:
 
         const quint64 swapThreshold = swapTotal * SWAP_CANDIDATE_LIMIT / 100;
         const QString ownCgroup = ownCgroupPath();
-        if (ownCgroup.isEmpty()) return;
+        if (ownCgroup.isEmpty())
+            return;
         int frozen = 0;
         for (const auto &app : candidates) {
-            if (trigger == Trigger::Swap && app.swap <= swapThreshold) continue;
-            if (ownCgroup == app.cgroup || ownCgroup.startsWith(app.cgroup + '/')) continue;
-            if (m_frozen.contains(app.cgroup)) continue;
+            if (trigger == Trigger::Swap && app.swap <= swapThreshold)
+                continue;
+            if (ownCgroup == app.cgroup || ownCgroup.startsWith(app.cgroup + '/'))
+                continue;
+            if (m_frozen.contains(app.cgroup))
+                continue;
             if (freezeOwned(app.cgroup, m_frozen)) {
                 qInfo() << L("Frozen %1 (%2) trigger=%3 reclaim=%4MB swap=%5MB memory=%6MB")
-                          .arg(app.name)
-                          .arg(app.cgroup)
-                          .arg(triggerName(trigger))
-                          .arg(app.reclaim / 1048576.0, 0, 'f', 1)
-                          .arg(app.swap / 1048576.0, 0, 'f', 1)
-                          .arg(app.memory / 1048576.0, 0, 'f', 1);
-                if (++frozen == 3) break;
+                                   .arg(app.name)
+                                   .arg(app.cgroup)
+                                   .arg(triggerName(trigger))
+                                   .arg(app.reclaim / 1048576.0, 0, 'f', 1)
+                                   .arg(app.swap / 1048576.0, 0, 'f', 1)
+                                   .arg(app.memory / 1048576.0, 0, 'f', 1);
+                if (++frozen == 3)
+                    break;
             } else {
                 qWarning() << L("Cannot freeze %1 (%2): unreadable or frozen by another component")
-                             .arg(app.name)
-                             .arg(app.cgroup);
+                                      .arg(app.name)
+                                      .arg(app.cgroup);
             }
         }
         refresh();
     }
 
-    bool unfreezeAll() {
-        return thawOwned(m_frozen);
+    bool unfreezeAll() { return thawOwned(m_frozen); }
+
+    // A quit request from the titlebar menu or from any other quit() call takes
+    // the same confirmation as closing the window while cgroups are paused.
+    QuitRequest handleQuitRequest()
+    {
+        if (!m_shutdownRequested && isVisible() && !confirmClose())
+            return QuitRequest::WaitForUser;
+        m_shutdownRequested = true;
+        return unfreezeAll() ? QuitRequest::Allow : QuitRequest::Retry;
     }
 
-    void requestShutdown() {
-        if (m_shutdownRequested) return;
+    void requestShutdown()
+    {
+        if (m_shutdownRequested)
+            return;
         m_shutdownRequested = true;
         qInfo() << L("Shutdown requested, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
         retryShutdown();
     }
 
-    void retryShutdown() {
+    void retryShutdown()
+    {
         if (unfreezeAll()) {
             qInfo() << L("All frozen cgroups thawed, exiting");
             qApp->quit();
         } else {
-            qWarning() << L("Thaw incomplete (%1 cgroup(s) remain), retrying").arg(m_frozen.size());
-            QTimer::singleShot(250, this, [this] { retryShutdown(); });
+            qWarning()
+                    << L("Thaw incomplete (%1 cgroup(s) remain), retrying").arg(m_frozen.size());
+            QTimer::singleShot(250, this, [this] {
+                retryShutdown();
+            });
         }
     }
 
-    void updateButtons() {
-        if (!m_table) return;
-        const int row = m_table->currentRow();
-        const QString cgroup = row < 0 ? QString() : m_table->item(row, 0)->data(Qt::UserRole).toString();
+    void updateButtons()
+    {
+        if (!m_view)
+            return;
+        const QString cgroup = currentCgroup();
         m_resumeBtn->setEnabled(!cgroup.isEmpty() && m_frozen.contains(cgroup));
         m_killBtn->setEnabled(!cgroup.isEmpty());
     }
 
-    void refresh() {
-        if (!m_table) return;
-        QString selected;
-        if (m_table->currentRow() >= 0)
-            selected = m_table->item(m_table->currentRow(), 0)->data(Qt::UserRole).toString();
+    QString currentCgroup() const
+    {
+        const QModelIndex index = m_view ? m_view->currentIndex() : QModelIndex();
+        return index.isValid() ? index.data(CGROUP_ROLE).toString() : QString();
+    }
+
+    void refreshStatus()
+    {
+        if (m_banner)
+            m_banner->setMemoryStatus(memoryLine(m_memory), swapLine(m_memory));
+    }
+
+
+    void refresh()
+    {
+        if (!m_view || !m_model)
+            return;
+        refreshStatus();
+        const QString selected = currentCgroup();
 
         auto procs = m_apps;
         std::sort(procs.begin(), procs.end(), [this](const Proc &a, const Proc &b) {
@@ -726,97 +1296,193 @@ public:
             const bool bFrozen = m_frozen.contains(b.cgroup);
             return aFrozen == bFrozen ? a.memory > b.memory : aFrozen;
         });
-        if (procs.size() > 10) procs.resize(10);
-        m_table->setRowCount(procs.size());
+        if (procs.size() > MAX_LIST_ROWS)
+            procs.resize(MAX_LIST_ROWS);
+
+        // Update rows in place so scrolling, hovering and selection survive the
+        // one-second refresh while the dialog is open.
+        while (m_model->rowCount() > procs.size())
+            m_model->removeRow(m_model->rowCount() - 1);
+        while (m_model->rowCount() < procs.size())
+            m_model->appendRow(new QStandardItem);
+
         int selectedRow = -1;
         for (int i = 0; i < procs.size(); ++i) {
             const bool frozen = m_frozen.contains(procs[i].cgroup);
-            auto *name = new QTableWidgetItem(procs[i].name + (frozen ? L("(Paused)") : QString()));
-            name->setIcon(QIcon::fromTheme(procs[i].icon,
-                                           QIcon::fromTheme("application-x-executable")));
-            name->setData(Qt::UserRole, procs[i].cgroup);
-            name->setData(APP_NAME_ROLE, procs[i].name);
-            name->setData(PAUSED_ROLE, frozen);
-            m_table->setItem(i, 0, name);
-
-            auto *memory = new QTableWidgetItem(fmtSize(procs[i].memory));
-            memory->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            memory->setForeground(QColor(105, 105, 110));
-            m_table->setItem(i, 1, memory);
-            if (procs[i].cgroup == selected) selectedRow = i;
+            auto *item = m_model->item(i);
+            item->setData(procs[i].cgroup, CGROUP_ROLE);
+            item->setData(procs[i].name, APP_NAME_ROLE);
+            item->setData(frozen, PAUSED_ROLE);
+            item->setData(fmtSize(procs[i].memory), MEMORY_ROLE);
+            item->setIcon(
+                    QIcon::fromTheme(procs[i].icon, QIcon::fromTheme("application-x-executable")));
+            if (procs[i].cgroup == selected)
+                selectedRow = i;
         }
-        if (selectedRow < 0 && !procs.isEmpty()) selectedRow = 0;
-        if (selectedRow >= 0) m_table->selectRow(selectedRow);
+
+        if (selectedRow < 0 && !procs.isEmpty())
+            selectedRow = 0;
+        if (selectedRow >= 0)
+            m_view->setCurrentIndex(m_model->index(selectedRow, 0));
+        m_listPages->setCurrentIndex(procs.isEmpty() ? 1 : 0);
         updateButtons();
     }
 
 protected:
-    void showEvent(QShowEvent *event) override {
+    void showEvent(QShowEvent *event) override
+    {
         ensureUi();
+        // A window that appears again belongs to a new pressure episode: ask
+        // again before this one closes with applications still paused.
+        m_closeConfirmed = false;
+        // Read the machine state once for the first paint; the poll keeps it up
+        // to date from then on.
+        m_memory = systemMemory();
         sampleApps();
         refresh();
         QMainWindow::showEvent(event);
     }
 
-    void closeEvent(QCloseEvent *event) override {
+    void closeEvent(QCloseEvent *event) override
+    {
+        // A shutdown from SIGTERM or SIGINT resumes the paused applications
+        // without asking; there is no user in front of a service stop.
+        if (!m_shutdownRequested && !confirmClose()) {
+            event->ignore();
+            return;
+        }
+
         qInfo() << L("Window closing, thawing %1 frozen cgroup(s)").arg(m_frozen.size());
         if (!unfreezeAll()) {
             qWarning() << L("Close blocked: thaw failed, retrying");
             event->ignore();
-            QTimer::singleShot(250, this, [this] { close(); });
+            QTimer::singleShot(250, this, [this] {
+                close();
+            });
             return;
         }
         m_postAction.start();
         QMainWindow::closeEvent(event);
-        if (event->isAccepted()) releaseUi();
+        if (event->isAccepted())
+            releaseUi();
     }
 
 private:
-    QTableWidget *m_table = nullptr;
+    // Closing resumes every application this process paused, so a close that
+    // was not meant as such must be confirmed first. Returns true when the
+    // close may proceed.
+    bool confirmClose()
+    {
+        if (!needsCloseConfirmation(m_frozen.size(), m_closeConfirmed))
+            return true;
+        if (m_confirmingClose) {
+            // A prompt is already on screen; keep the window until it is answered.
+            return false;
+        }
+
+        QDialog prompt(this);
+#ifdef HAVE_KF6
+        prompt.setWindowTitle(i18np("%1 application is still paused",
+                                    "%1 applications are still paused",
+                                    m_frozen.size()));
+#else
+        prompt.setWindowTitle(tr("%n application(s) are still paused", nullptr, m_frozen.size()));
+#endif
+        auto *layout = new QVBoxLayout(&prompt);
+        layout->setContentsMargins(24, 20, 24, 16);
+        layout->setSpacing(12);
+
+        auto *message = new QLabel(L("Closing the window resumes them immediately, and the system may "
+                                      "become unresponsive again."), &prompt);
+        message->setWordWrap(true);
+        layout->addWidget(message);
+
+        auto *buttonLayout = new QHBoxLayout;
+        buttonLayout->setSpacing(8);
+        auto *cancelBtn = new QPushButton(L("Cancel"), &prompt);
+        auto *closeBtn = new QPushButton(L("Close and Resume"), &prompt);
+        QPalette closePal = closeBtn->palette();
+        closePal.setColor(QPalette::ButtonText, warningColor(closePal));
+        closeBtn->setPalette(closePal);
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(cancelBtn);
+        buttonLayout->addWidget(closeBtn);
+        layout->addLayout(buttonLayout);
+
+        connect(cancelBtn, &QPushButton::clicked, [&prompt] { prompt.done(0); });
+        connect(closeBtn, &QPushButton::clicked, [&prompt] { prompt.done(1); });
+
+        m_confirmingClose = true;
+        const int choice = prompt.exec();
+        m_confirmingClose = false;
+
+        if (choice != 1) {
+            qInfo() << L("Close cancelled, %1 frozen cgroup(s) stay paused").arg(m_frozen.size());
+            return false;
+        }
+        m_closeConfirmed = true;
+        qInfo() << L("Close confirmed, resuming %1 frozen cgroup(s)").arg(m_frozen.size());
+        return true;
+    }
+
+    QListView *m_view = nullptr;
+    QStandardItemModel *m_model = nullptr;
+    QStackedLayout *m_listPages = nullptr;
+    AlertBanner *m_banner = nullptr;
     QPushButton *m_resumeBtn = nullptr;
     QPushButton *m_killBtn = nullptr;
     QTimer *m_timer;
     QList<Proc> m_apps;
     QSet<QString> m_frozen;
+    QSet<QString> m_whitelist;
     QHash<QString, quint64> m_lastPgscan;
     quint64 m_lastUserPgscan = 0;
+    SystemMemory m_memory;
     bool m_hasLastUserPgscan = false;
     bool m_shutdownRequested = false;
+    bool m_confirmingClose = false;
+    bool m_closeConfirmed = false;
     bool m_lastSamplesInvalid = false;
     QElapsedTimer m_pressureSince;
     QElapsedTimer m_reclaimSeen;
     QElapsedTimer m_postAction;
 };
 
-int main(int argc, char *argv[]) {
-    // 清除可能干扰的 XDG_APP_ID 环境变量，避免与 setDesktopFileName 冲突
-    unsetenv("XDG_APP_ID");
-
-    if (argc == 2 && QByteArray(argv[1]) == "--self-test") return selfTest() ? 0 : 1;
+int main(int argc, char *argv[])
+{
+    if (argc == 2 && QByteArray(argv[1]) == "--self-test")
+        return selfTest() ? 0 : 1;
 
     const int signalFd = createSignalFd();
-    if (signalFd < 0) return 1;
+    if (signalFd < 0)
+        return 1;
     LiferaftApplication a(argc, argv);
     a.setApplicationName("deepin-liferaft");
-    a.setDesktopFileName("deepin-liferaft");  // 必须与 .desktop 文件名一致
+    a.setDesktopFileName("deepin-liferaft");
 
 #ifdef HAVE_KF6
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("deepin-liferaft"));
 #endif
 
-    a.setApplicationDisplayName(L("Deepin Liferaft"));
+    a.setApplicationDisplayName(L("Memory Liferaft"));
+    a.setApplicationVersion(QStringLiteral(LIFERAFT_VERSION));
     const bool hidden = a.arguments().contains("--hidden");
+    const QSet<QString> whitelist = loadWhitelist(whitelistPaths());
+    qInfo() << L("Application whitelist: %1 entries")
+                       .arg(whitelist.size());
     a.setQuitOnLastWindowClosed(!hidden);
-    qInfo() << L("Deepin Liferaft started: pid=%1 mode=%2")
-              .arg(getpid())
-              .arg(hidden ? QStringLiteral("hidden") : QStringLiteral("foreground"));
-    // ponytail: 主题菜单原生保存三态选择; 初始值跟随系统
-    ForceQuitWindow w(signalFd);
-    a.setQuitGuard([&w] { return w.unfreezeAll(); });
-    // ponytail: 默认显示窗口; --hidden 后台常驻, 压力触发才弹
-    if (!hidden) w.show();
+    qInfo() << L("Memory Liferaft started: pid=%1 mode=%2")
+                       .arg(getpid())
+                       .arg(hidden ? QStringLiteral("hidden") : QStringLiteral("foreground"));
+    ForceQuitWindow w(signalFd, whitelist);
+    a.setQuitGuard([&w] {
+        return w.handleQuitRequest();
+    });
+    if (!hidden)
+        w.show();
     const int result = a.exec();
-    if (signalFd >= 0) ::close(signalFd);
+    if (signalFd >= 0)
+        ::close(signalFd);
     return result;
 }
 
